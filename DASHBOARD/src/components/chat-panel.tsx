@@ -3,8 +3,9 @@
 import React, { useState, useRef, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import type { Bot, ChatMessage, SearchResult } from "@/lib/types"
-import { Send, ExternalLink, Loader2, Mic, Volume2, Lock } from "lucide-react"
+import { Send, ExternalLink, Loader2, Mic, Volume2, Lock, Paperclip } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { analyticsTracker } from "@/lib/analytics-tracker"
 
 interface ChatPanelProps {
   bot: Bot | null
@@ -43,8 +44,10 @@ export function ChatPanel({
   isLoading,
 }: ChatPanelProps) {
   const [input, setInput] = useState("")
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const chatContainerRef = useRef<HTMLDivElement>(null)
 
   // Auto-scroll when messages change
@@ -64,8 +67,38 @@ export function ChatPanel({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (input.trim() && !isLoading) {
-      onSendMessage(input.trim())
+      let message = input.trim()
+      if (selectedFile) {
+        message = `${message} [File attached: ${selectedFile.name}]`
+      }
+      
+      // Track user activity
+      const user = localStorage.getItem("user")
+      const userData = user ? JSON.parse(user) : { name: "Guest", id: "guest" }
+      
+      analyticsTracker.trackActivity({
+        userId: userData.id || "guest",
+        userName: userData.name || "Guest",
+        action: "message_sent",
+        timestamp: new Date(),
+        metadata: {
+          botId: bot?.bot_id,
+          botName: bot?.title,
+          messageLength: message.length,
+          hasAttachment: !!selectedFile,
+        },
+      })
+      
+      onSendMessage(message)
       setInput("")
+      setSelectedFile(null)
+    }
+  }
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setSelectedFile(file)
     }
   }
 
@@ -76,15 +109,15 @@ export function ChatPanel({
 
   // Default greeting based on bot
   const defaultGreeting = bot?.bot_id === "finance" 
-    ? "Namaste, Priya. I'm PaisaWise. Let's look at your savings goals for this month."
+    ? "Hi! I'm PaisaWise, your financial advisor. How can I help you with your finances today?"
     : bot?.bot_id === "wellness"
-    ? "Hi! I'm FitHer, your desk wellness companion.\n\nI specialize in:\n• Sitting desk exercises (safe & easy)\n• Breathing techniques for stress\n• Neck, back, wrist & eye relief\n• Quick 1-7 minute wellness breaks\n\nAll exercises are designed to be done RIGHT AT YOUR DESK without standing up. No special equipment needed!\n\nWhat's bothering you today? Or would you like me to suggest a quick exercise?"
+    ? "Hi! I'm FitHer, your wellness companion. Tell me what's bothering you - neck pain, stress, tired eyes, or anything else?"
     : bot?.bot_id === "planner"
-    ? "Let's organize your day! What are your top priorities right now?"
+    ? "Hello! I'm PlanPal. Tell me about your tasks and I'll help you organize your day."
     : bot?.bot_id === "speakup"
-    ? "I'm here whenever you need to talk. Everything shared here stays private and safe."
+    ? "Hi, I'm SpeakUp. This is a safe space. Share anything you need support with."
     : bot?.bot_id === "upskill"
-    ? "Ready to level up your career? Tell me about your goals!"
+    ? "Hey! I'm GrowthGuru. Tell me about your career goals and I'll help you grow!"
     : "Select an assistant to start your wellness journey."
 
   const displayMessage = lastAssistantMessage || defaultGreeting
@@ -181,6 +214,19 @@ export function ChatPanel({
 
       {/* Input Area - Always available for typing */}
       <form onSubmit={handleSubmit} className="mt-4">
+        {selectedFile && (
+          <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground bg-card px-3 py-2 rounded-lg border border-border">
+            <Paperclip className="w-3 h-3" />
+            <span>{selectedFile.name}</span>
+            <button
+              type="button"
+              onClick={() => setSelectedFile(null)}
+              className="ml-auto text-destructive hover:underline"
+            >
+              Remove
+            </button>
+          </div>
+        )}
         <div className="relative">
           <input
             ref={inputRef}
@@ -190,7 +236,7 @@ export function ChatPanel({
             placeholder={placeholderText}
             disabled={!bot || isLoading}
             className={cn(
-              "w-full pl-5 pr-14 py-4 rounded-2xl",
+              "w-full pl-5 pr-24 py-4 rounded-2xl",
               "bg-card border-2 border-border shadow-sm",
               "text-foreground placeholder:text-muted-foreground text-sm",
               "focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40",
@@ -198,15 +244,35 @@ export function ChatPanel({
               "transition-all duration-200"
             )}
           />
-          <Button
-            type="submit"
-            disabled={!bot || !input.trim() || isLoading}
-            size="icon"
-            className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-xl hover:scale-105 transition-transform"
-          >
-            <Send className="w-4 h-4" />
-            <span className="sr-only">Send message</span>
-          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            onChange={handleFileSelect}
+            className="hidden"
+            accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
+          />
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
+            <Button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={!bot || isLoading}
+              size="icon"
+              variant="ghost"
+              className="h-10 w-10 rounded-xl hover:bg-accent transition-colors"
+            >
+              <Paperclip className="w-4 h-4" />
+              <span className="sr-only">Attach file</span>
+            </Button>
+            <Button
+              type="submit"
+              disabled={!bot || !input.trim() || isLoading}
+              size="icon"
+              className="h-10 w-10 rounded-xl hover:scale-105 transition-transform"
+            >
+              <Send className="w-4 h-4" />
+              <span className="sr-only">Send message</span>
+            </Button>
+          </div>
         </div>
       </form>
     </div>

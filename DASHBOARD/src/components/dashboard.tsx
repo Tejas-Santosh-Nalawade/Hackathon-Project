@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
-import useSWR from "swr"
 import { BotSelector } from "./bot-selector"
 import { MainContent } from "./main-content"
 
@@ -14,7 +13,7 @@ import {
   loadChatHistory,
   clearChatHistory,
 } from "@/lib/api"
-import { Menu, X, Search, Settings, LogOut, User, Bell } from "lucide-react"
+import { Menu, X, Search, Settings, LogOut, User, Bell, BarChart3 } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -116,15 +115,9 @@ export function Dashboard() {
     navigate("/auth")
   }, [navigate])
 
-  // Fetch bots from API with fallback to defaults
-  const { data: bots, isLoading: isLoadingBots } = useSWR<Bot[]>(
-    "bots",
-    fetchBots,
-    {
-      fallbackData: defaultBots,
-      onError: () => {},
-    }
-  )
+  // Use default bots (no API call to prevent flickering)
+  const bots = defaultBots
+  const isLoadingBots = false
 
   const selectedBot = bots?.find((bot) => bot.bot_id === selectedBotId) || null
 
@@ -277,6 +270,13 @@ export function Dashboard() {
                 <DropdownMenuItem className="cursor-pointer">
                   <Settings className="w-4 h-4 mr-2" />
                   Settings
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className="cursor-pointer"
+                  onClick={() => navigate("/analytics")}
+                >
+                  <BarChart3 className="w-4 h-4 mr-2" />
+                  Analytics
                 </DropdownMenuItem>
                 <DropdownMenuItem className="cursor-pointer">
                   <Bell className="w-4 h-4 mr-2" />

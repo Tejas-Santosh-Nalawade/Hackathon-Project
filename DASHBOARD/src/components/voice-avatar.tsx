@@ -1,9 +1,11 @@
 "use client"
 
 import React, { useState, useEffect, useRef } from "react"
-import { Mic, MicOff, Volume2, VolumeX, Loader2 } from "lucide-react"
+import { Mic, MicOff, Volume2, VolumeX, Loader2, Play } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getVoiceAgent } from "@/lib/voice-agent"
+import { GuidedSessionModal } from "@/components/guided-session-modal"
+import { getSessionsForBot, type GuidedSession } from "@/lib/guided-sessions"
 import type { Bot } from "@/lib/types"
 
 interface VoiceAvatarProps {
@@ -17,6 +19,8 @@ export function VoiceAvatar({ bot, onSendMessage }: VoiceAvatarProps) {
   const [transcript, setTranscript] = useState("")
   const [response, setResponse] = useState("")
   const [voiceEnabled, setVoiceEnabled] = useState(true)
+  const [isSessionModalOpen, setIsSessionModalOpen] = useState(false)
+  const [currentSession, setCurrentSession] = useState<GuidedSession | null>(null)
   const voiceAgentRef = useRef(getVoiceAgent())
 
   // Welcome message when component mounts - Agent specific
@@ -26,28 +30,28 @@ export function VoiceAvatar({ bot, onSendMessage }: VoiceAvatarProps) {
       
       switch (bot.bot_id) {
         case "wellness":
-          welcomeMsg = "Hi! I'm FitHer, your wellness companion. Just tap the microphone and tell me what's bothering you. I'm listening."
+          welcomeMsg = "Hi! I'm FitHer. Tell me what's bothering you - neck pain, stress, tired eyes?"
           break
         case "finance":
-          welcomeMsg = "Namaste! I'm PaisaWise, your financial advisor. Tell me about your savings goals or budget questions."
+          welcomeMsg = "Hi! I'm PaisaWise. How can I help with your finances today?"
           break
         case "planner":
-          welcomeMsg = "Hello! I'm PlanPal, your time management assistant. Tell me about your day and I'll help you organize it."
+          welcomeMsg = "Hello! I'm PlanPal. Tell me about your day and I'll help organize it."
           break
         case "speakup":
-          welcomeMsg = "Hi, I'm SpeakUp. This is a safe, private space. Share anything you need support with. I'm here to listen."
+          welcomeMsg = "Hi, I'm SpeakUp. This is a safe space. Share what you need."
           break
         case "upskill":
-          welcomeMsg = "Hey! I'm GrowthGuru, your career coach. Tell me about your career goals or skills you want to develop."
+          welcomeMsg = "Hey! I'm GrowthGuru. Tell me your career goals!"
           break
         default:
-          welcomeMsg = "Hello! Tap the microphone to start our conversation."
+          welcomeMsg = "Hello! Tap the microphone to start."
       }
       
       voiceAgentRef.current.speak(welcomeMsg)
       setResponse(welcomeMsg)
       setIsSpeaking(true)
-      setTimeout(() => setIsSpeaking(false), 8000)
+      setTimeout(() => setIsSpeaking(false), 5000)
     }
   }, [bot?.bot_id, voiceEnabled])
 
@@ -230,242 +234,79 @@ export function VoiceAvatar({ bot, onSendMessage }: VoiceAvatarProps) {
           </Button>
         )}
       </div>
-      </div>
 
       {/* Instructions */}
       <div className="mt-8 text-center max-w-md">
         <p className="text-xs text-muted-foreground leading-relaxed">
           {isListening
             ? `Speak clearly. ${bot?.bot_id === 'wellness' ? 'Tell me about pain or stress areas.' : bot?.bot_id === 'finance' ? 'Ask about budgeting or savings.' : bot?.bot_id === 'planner' ? 'Describe your tasks and schedule.' : bot?.bot_id === 'speakup' ? 'Share your concerns freely.' : 'Tell me what you need help with.'}`
-            : `Example: ${bot?.bot_id === 'wellness' ? "Say 'My neck hurts' or 'I'm stressed'" : bot?.bot_id === 'finance' ? "Say 'Help me budget' or 'Savings plan'" : bot?.bot_id === 'planner' ? "Say 'Plan my day' or 'Schedule meeting'" : bot?.bot_id === 'speakup' ? "Say 'I need to talk' or 'Safety concern'" : "Say 'I need help with...'"}`
+            : `Tap a guided session below or use the microphone to talk with me`
           }
         </p>
       </div>
 
-      {/* Quick Voice Commands - Agent Specific */}
-      {!isListening && !isSpeaking && (
-        <div className="mt-6 grid grid-cols-2 gap-3 max-w-md">
-          {bot?.bot_id === 'wellness' && (
-            <>
-              <button
-                onClick={() => {
-                  const msg = "My neck hurts"
-                  setTranscript(msg)
-                  if (onSendMessage) onSendMessage(msg)
-                  voiceAgentRef.current.converse(msg, (res) => {
-                    setResponse(res)
-                  })
-                }}
-                className="px-4 py-2 text-xs bg-card border border-border rounded-lg hover:bg-accent transition-colors"
-              >
-                "My neck hurts"
-              </button>
-              <button
-                onClick={() => {
-                  const msg = "I'm stressed"
-                  setTranscript(msg)
-                  if (onSendMessage) onSendMessage(msg)
-                  voiceAgentRef.current.converse(msg, (res) => {
-                    setResponse(res)
-                  })
-                }}
-                className="px-4 py-2 text-xs bg-card border border-border rounded-lg hover:bg-accent transition-colors"
-              >
-                "I'm stressed"
-              </button>
-              <button
-                onClick={() => {
-                  const msg = "My eyes are tired"
-                  setTranscript(msg)
-                  if (onSendMessage) onSendMessage(msg)
-                  voiceAgentRef.current.converse(msg, (res) => {
-                    setResponse(res)
-                  })
-                }}
-                className="px-4 py-2 text-xs bg-card border border-border rounded-lg hover:bg-accent transition-colors"
-              >
-                "Eyes tired"
-              </button>
-              <button
-                onClick={() => {
-                  const msg = "Shoulder pain"
-                  setTranscript(msg)
-                  if (onSendMessage) onSendMessage(msg)
-                  voiceAgentRef.current.converse(msg, (res) => {
-                    setResponse(res)
-                  })
-                }}
-                className="px-4 py-2 text-xs bg-card border border-border rounded-lg hover:bg-accent transition-colors"
-              >
-                "Shoulder pain"
-              </button>
-            </>
-          )}
-          
-          {bot?.bot_id === 'finance' && (
-            <>
-              <button
-                onClick={() => {
-                  setTranscript("Help me budget")
-                  voiceAgentRef.current.converse("Help me budget my monthly expenses", (res) => setResponse(res))
-                }}
-                className="px-4 py-2 text-xs bg-card border border-border rounded-lg hover:bg-accent transition-colors"
-              >
-                "Help me budget"
-              </button>
-              <button
-                onClick={() => {
-                  setTranscript("Savings plan")
-                  voiceAgentRef.current.converse("I want to start a savings plan", (res) => setResponse(res))
-                }}
-                className="px-4 py-2 text-xs bg-card border border-border rounded-lg hover:bg-accent transition-colors"
-              >
-                "Savings plan"
-              </button>
-              <button
-                onClick={() => {
-                  setTranscript("Tax planning")
-                  voiceAgentRef.current.converse("Help me with tax planning", (res) => setResponse(res))
-                }}
-                className="px-4 py-2 text-xs bg-card border border-border rounded-lg hover:bg-accent transition-colors"
-              >
-                "Tax planning"
-              </button>
-              <button
-                onClick={() => {
-                  setTranscript("Track expenses")
-                  voiceAgentRef.current.converse("How can I track my expenses better", (res) => setResponse(res))
-                }}
-                className="px-4 py-2 text-xs bg-card border border-border rounded-lg hover:bg-accent transition-colors"
-              >
-                "Track expenses"
-              </button>
-            </>
-          )}
-          
-          {bot?.bot_id === 'planner' && (
-            <>
-              <button
-                onClick={() => {
-                  setTranscript("Plan my day")
-                  voiceAgentRef.current.converse("Help me plan my day", (res) => setResponse(res))
-                }}
-                className="px-4 py-2 text-xs bg-card border border-border rounded-lg hover:bg-accent transition-colors"
-              >
-                "Plan my day"
-              </button>
-              <button
-                onClick={() => {
-                  setTranscript("Balance work-life")
-                  voiceAgentRef.current.converse("Help me balance work and life", (res) => setResponse(res))
-                }}
-                className="px-4 py-2 text-xs bg-card border border-border rounded-lg hover:bg-accent transition-colors"
-              >
-                "Balance work-life"
-              </button>
-              <button
-                onClick={() => {
-                  setTranscript("Add buffer time")
-                  voiceAgentRef.current.converse("I need buffer time in my schedule", (res) => setResponse(res))
-                }}
-                className="px-4 py-2 text-xs bg-card border border-border rounded-lg hover:bg-accent transition-colors"
-              >
-                "Add buffer time"
-              </button>
-              <button
-                onClick={() => {
-                  setTranscript("Prioritize tasks")
-                  voiceAgentRef.current.converse("Help me prioritize my tasks", (res) => setResponse(res))
-                }}
-                className="px-4 py-2 text-xs bg-card border border-border rounded-lg hover:bg-accent transition-colors"
-              >
-                "Prioritize tasks"
-              </button>
-            </>
-          )}
-          
-          {bot?.bot_id === 'speakup' && (
-            <>
-              <button
-                onClick={() => {
-                  setTranscript("Need to talk")
-                  voiceAgentRef.current.converse("I need someone to talk to", (res) => setResponse(res))
-                }}
-                className="px-4 py-2 text-xs bg-card border border-border rounded-lg hover:bg-accent transition-colors"
-              >
-                "Need to talk"
-              </button>
-              <button
-                onClick={() => {
-                  setTranscript("Safety resources")
-                  voiceAgentRef.current.converse("What safety resources are available", (res) => setResponse(res))
-                }}
-                className="px-4 py-2 text-xs bg-card border border-border rounded-lg hover:bg-accent transition-colors"
-              >
-                "Safety resources"
-              </button>
-              <button
-                onClick={() => {
-                  setTranscript("Need support")
-                  voiceAgentRef.current.converse("I need support", (res) => setResponse(res))
-                }}
-                className="px-4 py-2 text-xs bg-card border border-border rounded-lg hover:bg-accent transition-colors"
-              >
-                "Need support"
-              </button>
-              <button
-                onClick={() => {
-                  setTranscript("Private conversation")
-                  voiceAgentRef.current.converse("I need a private conversation", (res) => setResponse(res))
-                }}
-                className="px-4 py-2 text-xs bg-card border border-border rounded-lg hover:bg-accent transition-colors"
-              >
-                "Private talk"
-              </button>
-            </>
-          )}
-          
-          {bot?.bot_id === 'upskill' && (
-            <>
-              <button
-                onClick={() => {
-                  setTranscript("Course recommendations")
-                  voiceAgentRef.current.converse("Recommend courses for me", (res) => setResponse(res))
-                }}
-                className="px-4 py-2 text-xs bg-card border border-border rounded-lg hover:bg-accent transition-colors"
-              >
-                "Course recommendations"
-              </button>
-              <button
-                onClick={() => {
-                  setTranscript("Skill gap analysis")
-                  voiceAgentRef.current.converse("Analyze my skill gaps", (res) => setResponse(res))
-                }}
-                className="px-4 py-2 text-xs bg-card border border-border rounded-lg hover:bg-accent transition-colors"
-              >
-                "Skill gap analysis"
-              </button>
-              <button
-                onClick={() => {
-                  setTranscript("Resume help")
-                  voiceAgentRef.current.converse("Help me improve my resume", (res) => setResponse(res))
-                }}
-                className="px-4 py-2 text-xs bg-card border border-border rounded-lg hover:bg-accent transition-colors"
-              >
-                "Resume help"
-              </button>
-              <button
-                onClick={() => {
-                  setTranscript("Career goals")
-                  voiceAgentRef.current.converse("Help me set career goals", (res) => setResponse(res))
-                }}
-                className="px-4 py-2 text-xs bg-card border border-border rounded-lg hover:bg-accent transition-colors"
-              >
-                "Career goals"
-              </button>
-            </>
-          )}
+      {/* Guided Sessions - Agent Specific */}
+      {!isListening && !isSpeaking && bot && (
+        <div className="mt-6 w-full max-w-2xl">
+          <div className="bg-gradient-to-br from-pink-50 via-purple-50 to-rose-50 rounded-2xl border-2 border-pink-200 shadow-lg p-6">
+            {/* Header */}
+            <div className="flex items-center justify-center gap-2 mb-6">
+              <span className="text-2xl">💝</span>
+              <h3 className="text-xl font-bold bg-gradient-to-r from-pink-600 via-purple-600 to-rose-600 bg-clip-text text-transparent">
+                Wellness Sessions for You
+              </h3>
+            </div>
+            
+            {/* Sessions Grid - No Scrolling */}
+            <div className="grid grid-cols-1 gap-4">
+              {getSessionsForBot(bot.bot_id).map((session, index) => (
+                <button
+                  key={session.id}
+                  onClick={() => {
+                    setCurrentSession(session)
+                    setIsSessionModalOpen(true)
+                  }}
+                  className="w-full flex items-center gap-4 px-6 py-5 text-left bg-white border-2 border-pink-300 rounded-xl hover:bg-gradient-to-r hover:from-pink-100 hover:via-purple-100 hover:to-rose-100 hover:border-purple-400 hover:shadow-xl transition-all group"
+                >
+                  <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-pink-200 to-purple-200 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <span className="text-2xl font-bold text-purple-600">{index + 1}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-base font-bold text-gray-800 group-hover:text-purple-700 transition-colors mb-1">
+                      {session.title}
+                    </p>
+                    <div className="flex items-center gap-3 text-xs text-gray-600">
+                      <span className="flex items-center gap-1">
+                        <span className="text-pink-500">✨</span>
+                        {session.steps.length} steps
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="text-purple-500">🎵</span>
+                        Voice guided
+                      </span>
+                    </div>
+                  </div>
+                  <Play className="flex-shrink-0 w-8 h-8 text-pink-500 group-hover:text-purple-600 group-hover:scale-125 transition-transform" />
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
+      )}
+
+      {/* Guided Session Modal */}
+      {currentSession && (
+        <GuidedSessionModal
+          isOpen={isSessionModalOpen}
+          onClose={() => {
+            setIsSessionModalOpen(false)
+            setCurrentSession(null)
+          }}
+          botId={bot?.bot_id || ""}
+          botTitle={bot?.title || ""}
+          sessionType={currentSession.title}
+          steps={currentSession.steps}
+        />
       )}
     </div>
   )

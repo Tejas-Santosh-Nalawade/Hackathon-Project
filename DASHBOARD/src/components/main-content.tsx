@@ -304,9 +304,6 @@ export function MainContent({
           {/* Welcome Section */}
           <WelcomeSection userName={userName} />
 
-          {/* Personalized Cards for Current Agent */}
-          {currentCards.length > 0 && <PersonalizedResets cards={currentCards} />}
-
           {/* Chat Panel */}
           <div className="flex-1 flex flex-col">
             {messages.length > 0 && (

@@ -283,29 +283,29 @@ export class VoiceAgent {
     
     const input = userInput.toLowerCase()
     
-    // Exercise requests
-    if (input.includes("neck") || input.includes("stiff neck")) {
-      return "I've got you! Let's do a 2-minute neck relief exercise. Sit upright with your feet flat on the floor. Slowly tilt your head to the right and hold for 5 seconds. Now back to center, and tilt left. Roll your shoulders backward 5 times. Take a deep breath in, and slowly exhale. How does your neck feel now?"
+    // Exercise requests - simplified conversational responses
+    if (input.includes("neck") || input.includes("stiff neck") || input.includes("hurt")) {
+      return "I understand your neck is bothering you. I can guide you through a gentle 2-minute sitting stretch that really helps. Would you like me to guide you through it now, or would you prefer some other relief options?"
     }
     
     if (input.includes("stress") || input.includes("anxious") || input.includes("overwhelm")) {
-      return "I hear you. Let's calm your nervous system with box breathing. Sit comfortably. Breathe in for 4 counts. Hold for 4. Breathe out for 4. Hold for 4. Let's do this together. Ready? Breathe in, one, two, three, four. Hold, one, two, three, four. Breathe out, one, two, three, four. Hold. Beautiful. Feel the difference?"
+      return "I hear you. Stress can be overwhelming. Let me help you calm down with a simple breathing technique. Would you like to try a 2-minute box breathing exercise, or would you prefer something else?"
     }
     
     if (input.includes("eye") || input.includes("screen") || input.includes("tired eyes")) {
-      return "Your eyes need a break! Let's do the 20-20-20 rule. Look away from your screen right now. Find something 20 feet away and focus on it for 20 seconds. Good. Now close your eyes gently, cup your palms over them without pressing. Stay in this peaceful darkness for 30 seconds. When you're ready, slowly open your eyes. Refreshed?"
+      return "Your eyes need a break from the screen. I can guide you through a quick 20-second eye relaxation exercise. Shall we do it together now?"
     }
     
     if (input.includes("shoulder") || input.includes("back") || input.includes("tense")) {
-      return "Let's release that tension. Sit tall and relax your shoulders. Bring your right arm across your chest, hold it with your left hand. Feel that stretch for 20 seconds. Good. Now switch sides. Left arm across, hold with right hand. Perfect. Now interlace your fingers behind your back and gently lift your arms. Hold for 15 seconds while breathing deeply. Excellent work!"
+      return "Those shoulders carry a lot of tension! I have a simple seated stretch that takes just 2 minutes and feels amazing. Want to try it?"
     }
     
     if (input.includes("breathing") || input.includes("breath")) {
-      return "Perfect choice. Let's do a calming breathing exercise. Close your eyes if you'd like. Breathe in slowly through your nose for 4 counts. Hold for 4 counts. Breathe out through your mouth for 4 counts. Hold empty lungs for 4 counts. Let's do 3 more cycles. You're doing great. Notice how much calmer you feel."
+      return "Breathing exercises are so helpful! I can guide you through a calming technique that takes just 2 minutes. Ready to feel more relaxed?"
     }
     
     if (input.includes("wrist") || input.includes("hand") || input.includes("typing")) {
-      return "Time to care for those hard-working hands! Extend your right arm, palm up. With your left hand, gently pull your fingers back. Hold 15 seconds. Now flip palm down and pull again. Make tight fists, then spread fingers wide. Repeat 10 times. Now switch to your left hand. Your wrists will thank you!"
+      return "Your hands and wrists work so hard! I can show you some gentle stretches you can do right at your desk. Takes about 2 minutes. Interested?"
     }
     
     // General requests

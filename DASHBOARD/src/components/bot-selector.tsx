@@ -4,6 +4,7 @@ import React from "react"
 import { cn } from "@/lib/utils"
 import type { Bot } from "@/lib/types"
 import { Activity, Calendar, Shield, Rocket, Wallet, Dumbbell } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 
 interface BotSelectorProps {
   bots: Bot[]
@@ -55,9 +56,9 @@ export function BotSelector({
   isLoading,
 }: BotSelectorProps) {
   return (
-    <aside className="w-80 bg-sidebar border-r border-sidebar-border flex flex-col h-full">
+    <aside className="w-80 bg-sidebar border-r border-sidebar-border flex flex-col h-full flex-shrink-0">
       {/* Logo - Larger and More Prominent */}
-      <div className="p-6 pb-6 border-b border-sidebar-border bg-white">
+      <div className="p-6 pb-6 border-b border-sidebar-border bg-white flex-shrink-0">
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-2xl overflow-hidden bg-gradient-to-br from-[oklch(0.85_0.08_175)] to-[oklch(0.75_0.10_175)] p-0.5 shadow-lg ring-2 ring-primary/20">
             <div className="w-full h-full bg-white rounded-xl p-1">
@@ -83,17 +84,7 @@ export function BotSelector({
           MY SUPPORT TEAM
         </p>
         
-        {isLoading ? (
-          <div className="space-y-2">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div
-                key={i}
-                className="h-16 bg-muted rounded-xl animate-pulse"
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-2">
+        <div className="space-y-2">
             {bots.map((bot) => {
               const Icon = botIcons[bot.bot_id] || Activity
               const isSelected = selectedBotId === bot.bot_id
@@ -147,12 +138,11 @@ export function BotSelector({
                 </button>
               )
             })}
-          </div>
-        )}
+        </div>
       </nav>
 
       {/* Today's Focus - Larger and More Prominent */}
-      <div className="p-5 border-t border-sidebar-border">
+      <div className="p-5 border-t border-sidebar-border flex-shrink-0">
         <div className="bg-gradient-to-br from-pink-50 to-purple-50 rounded-2xl p-5 shadow-sm">
           <h4 className="text-base font-bold text-sidebar-foreground mb-3">
             Today's Focus
