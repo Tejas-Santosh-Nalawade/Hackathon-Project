@@ -13,6 +13,7 @@ import {
   loadChatHistory,
   clearChatHistory,
 } from "@/lib/api"
+import { toast } from "sonner"
 import { Menu, X, Search, Settings, LogOut, User, Bell, BarChart3 } from "lucide-react"
 import {
   DropdownMenu,
@@ -25,66 +26,42 @@ import {
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-// Default bots for demo/offline mode
-const defaultBots: Bot[] = [
+// Fallback bots for offline mode (used when backend is unavailable)
+const fallbackBots: Bot[] = [
   {
     bot_id: "wellness",
     title: "FitHer",
-    description: "Sitting exercises, breathing & stress relief - desk safe!",
-    icon_emoji: "activity",
+    description: "Your wellness & fitness coach — workouts, nutrition, energy tips",
+    icon_emoji: "💪",
   },
   {
     bot_id: "planner",
     title: "PlanPal",
-    description: "Master your time - prioritize, balance work-life",
-    icon_emoji: "calendar",
+    description: "Master your time — prioritize, plan, say no to overcommitment",
+    icon_emoji: "📅",
   },
   {
     bot_id: "speakup",
     title: "SpeakUp",
-    description: "Harassment & safety support - private & caring",
-    icon_emoji: "shield",
+    description: "Harassment & safety support — guidance, process info, emotional validation",
+    icon_emoji: "🛡️",
   },
   {
     bot_id: "upskill",
     title: "GrowthGuru",
-    description: "Career coach - courses, resume, skills",
-    icon_emoji: "rocket",
+    description: "Career coach — resume, interviews, negotiation, upskilling paths",
+    icon_emoji: "🚀",
   },
   {
     bot_id: "finance",
     title: "PaisaWise",
-    description: "Finance helper - budgeting, savings, goals",
-    icon_emoji: "wallet",
+    description: "Finance helper — budgeting, savings, expense tracking tips",
+    icon_emoji: "💰",
   },
 ]
 
-// Demo responses for offline mode
-const demoResponses: Record<string, string[]> = {
-  wellness: [
-    "🧘 Let's do a quick 2-minute neck relief routine. You don't even need to stand!\n\n1️⃣ Sit upright, feet flat on the floor\n2️⃣ Slowly tilt your head to the right (hold 5 seconds)\n3️⃣ Back to center… now left (hold 5 seconds)\n4️⃣ Roll shoulders backward 5 times\n5️⃣ Take one deep inhale… slow exhale\n\n✨ How does your neck feel now?",
-    "I notice you might need a short break. Here's a 3-minute sitting shoulder stretch:\n\n1️⃣ Sit tall, relax your shoulders\n2️⃣ Bring right arm across chest, hold with left hand (20 sec)\n3️⃣ Repeat with left arm\n4️⃣ Interlace fingers behind back, gently lift arms\n5️⃣ Hold for 15 seconds, breathe deeply\n\n💙 Done! Feel the difference?",
-    "Let's do eye relaxation (perfect after screen time):\n\n1️⃣ Look away from the screen\n2️⃣ Focus on something 20 feet away for 20 seconds\n3️⃣ Close eyes, cup palms over them (don't press)\n4️⃣ Breathe slowly for 30 seconds\n5️⃣ Slowly open eyes\n\n👁️ Your eyes deserve this break!",
-    "Quick breathing reset for stress relief:\n\n🌬️ Box Breathing (2 minutes):\n• Inhale slowly for 4 counts\n• Hold for 4 counts\n• Exhale for 4 counts\n• Hold for 4 counts\n\nRepeat 4-5 times. This calms your nervous system instantly.\n\nHow do you feel?",
-    "Wrist & hand relief (great for typing fatigue):\n\n1️⃣ Extend right arm, palm up\n2️⃣ Gently pull fingers back with left hand (15 sec)\n3️⃣ Flip palm down, pull fingers toward you (15 sec)\n4️⃣ Make fists, then spread fingers wide (repeat 10x)\n5️⃣ Repeat with left hand\n\n✋ Better circulation, less strain!",
-  ],
-  planner: [
-    "Let's organize your priorities. What are the 3 most important tasks you need to complete today? I'll help you create a realistic schedule with built-in breaks.",
-    "Remember to include buffer time between tasks. A good rule is 10-15 minutes between meetings.",
-  ],
-  speakup: [
-    "I'm here to listen and support you. Everything you share stays between us. Take your time - there's no pressure to share anything you're not comfortable with.",
-    "That sounds difficult. Your feelings are completely valid. Would you like me to share some information about your options?",
-  ],
-  upskill: [
-    "Based on current market trends, skills in data analysis, digital marketing, and project management are highly valued. Which area interests you most?",
-    "For career growth, I recommend focusing on both technical skills and soft skills like communication and leadership.",
-  ],
-  finance: [
-    "Namaste, Priya. I'm PaisaWise. Let's look at your savings goals for this month.",
-    "Let's start with the 50/30/20 rule: 50% of income for needs, 30% for wants, and 20% for savings and debt repayment.",
-  ],
-}
+const MAX_MESSAGE_LENGTH = 2000
+const HISTORY_SLICE = 12
 
 export function Dashboard() {
   const navigate = useNavigate()
@@ -94,6 +71,9 @@ export function Dashboard() {
   const [isLoading, setIsLoading] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [userName, setUserName] = useState("Priya")
+  const [bots, setBots] = useState<Bot[]>(fallbackBots)
+  const [isLoadingBots, setIsLoadingBots] = useState(true)
+  const [isBackendConnected, setIsBackendConnected] = useState(false)
 
   // Load user name from localStorage on mount
   useEffect(() => {
@@ -110,14 +90,34 @@ export function Dashboard() {
     }
   }, [])
 
+  // Fetch bots from backend API on mount
+  useEffect(() => {
+    const loadBots = async () => {
+      setIsLoadingBots(true)
+      try {
+        const apiBots = await fetchBots()
+        setBots(apiBots)
+        setIsBackendConnected(true)
+        console.log("[API] Connected to backend, loaded", apiBots.length, "bots")
+      } catch (error) {
+        console.warn("[API] Backend unavailable, using fallback bots:", error)
+        setBots(fallbackBots)
+        setIsBackendConnected(false)
+        toast.info("Running in offline mode", {
+          description: "Backend server not available. Start the backend to enable AI chat.",
+          duration: 5000,
+        })
+      } finally {
+        setIsLoadingBots(false)
+      }
+    }
+    loadBots()
+  }, [])
+
   const handleLogout = useCallback(() => {
     localStorage.removeItem("user")
     navigate("/auth")
   }, [navigate])
-
-  // Use default bots (no API call to prevent flickering)
-  const bots = defaultBots
-  const isLoadingBots = false
 
   const selectedBot = bots?.find((bot) => bot.bot_id === selectedBotId) || null
 
@@ -137,40 +137,62 @@ export function Dashboard() {
 
   const handleSendMessage = useCallback(
     async (message: string) => {
-      if (!selectedBotId) return
+      if (!selectedBotId || isLoading) return
+      if (message.length > MAX_MESSAGE_LENGTH) {
+        toast.warning("Message too long", {
+          description: `Please keep messages under ${MAX_MESSAGE_LENGTH} characters so I can respond faster.`,
+        })
+        return
+      }
 
       const userMessage: ChatMessage = { role: "user", content: message }
       const newMessages = [...messages, userMessage]
+      const botIdAtSend = selectedBotId
+      const trimmedHistory = messages.slice(-HISTORY_SLICE)
       setMessages(newMessages)
       setIsLoading(true)
       setSearchResults(null)
 
       try {
-        const response = await sendChatMessage(selectedBotId, message, messages)
+        const response = await sendChatMessage(botIdAtSend, message, trimmedHistory)
         const assistantMessage: ChatMessage = {
           role: "assistant",
           content: response.reply,
         }
         const updatedMessages = [...newMessages, assistantMessage]
-        setMessages(updatedMessages)
-        setSearchResults(response.search_results)
-        saveChatHistory(selectedBotId, updatedMessages)
-      } catch {
-        const demoReplies = demoResponses[selectedBotId] || demoResponses.wellness
-        const randomReply =
-          demoReplies[Math.floor(Math.random() * demoReplies.length)]
-        const assistantMessage: ChatMessage = {
-          role: "assistant",
-          content: randomReply,
+
+        // If user switched bots mid-response, save history silently but avoid overwriting UI
+        if (selectedBotId === botIdAtSend) {
+          setMessages(updatedMessages)
+          setSearchResults(response.search_results)
         }
-        const updatedMessages = [...newMessages, assistantMessage]
-        setMessages(updatedMessages)
-        saveChatHistory(selectedBotId, updatedMessages)
+
+        saveChatHistory(botIdAtSend, updatedMessages)
+        // Mark backend as connected on successful response
+        if (!isBackendConnected) {
+          setIsBackendConnected(true)
+        }
+      } catch (error) {
+        console.error("[API] Chat error:", error)
+        // Show error message to user
+        const errorMessage: ChatMessage = {
+          role: "assistant",
+          content: "⚠️ I couldn't connect to the AI service right now. Please make sure the backend server is running on http://localhost:8000.\n\nTo start the backend:\n1. Open a terminal in the `backend` folder\n2. Run: `.\\start.ps1`\n\nThen try sending your message again!",
+        }
+        const updatedMessages = [...newMessages, errorMessage]
+        if (selectedBotId === botIdAtSend) {
+          setMessages(updatedMessages)
+        }
+        saveChatHistory(botIdAtSend, updatedMessages)
+        setIsBackendConnected(false)
+        toast.error("Connection failed", {
+          description: "Could not reach the AI backend. Is the server running?",
+        })
       } finally {
         setIsLoading(false)
       }
     },
-    [selectedBotId, messages]
+    [selectedBotId, messages, isBackendConnected, isLoading]
   )
 
   const handleClearChat = useCallback(() => {
@@ -232,6 +254,28 @@ export function Dashboard() {
                 className="w-full pl-10 pr-4 py-2.5 rounded-full bg-muted border-0 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
+          </div>
+
+          {/* Backend connection status */}
+          <div className="hidden lg:flex items-center gap-2 pr-4">
+            <span
+              className={cn(
+                "h-2.5 w-2.5 rounded-full",
+                isLoadingBots
+                  ? "bg-amber-400 animate-pulse"
+                  : isBackendConnected
+                    ? "bg-emerald-500"
+                    : "bg-amber-500 animate-pulse"
+              )}
+              aria-hidden
+            />
+            <span className="text-xs font-medium text-muted-foreground">
+              {isLoadingBots
+                ? "Checking AI..."
+                : isBackendConnected
+                  ? "AI connected"
+                  : "Offline mode"}
+            </span>
           </div>
 
           {/* User Profile with Settings */}

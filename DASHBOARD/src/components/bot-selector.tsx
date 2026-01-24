@@ -55,6 +55,8 @@ export function BotSelector({
   onSelectBot,
   isLoading,
 }: BotSelectorProps) {
+  const skeletonItems = Array.from({ length: 5 })
+
   return (
     <aside className="w-80 bg-sidebar border-r border-sidebar-border flex flex-col h-full flex-shrink-0">
       {/* Logo - Larger and More Prominent */}
@@ -85,59 +87,68 @@ export function BotSelector({
         </p>
         
         <div className="space-y-2">
-            {bots.map((bot) => {
-              const Icon = botIcons[bot.bot_id] || Activity
-              const isSelected = selectedBotId === bot.bot_id
-              const colors = botColors[bot.bot_id] || botColors.wellness
+          {isLoading
+            ? skeletonItems.map((_, idx) => (
+                <div
+                  key={`bot-skeleton-${idx}`}
+                  className="h-16 rounded-2xl bg-sidebar-accent/60 animate-pulse"
+                />
+              ))
+            : bots.map((bot) => {
+                const Icon = botIcons[bot.bot_id] || Activity
+                const isSelected = selectedBotId === bot.bot_id
+                const colors = botColors[bot.bot_id] || botColors.wellness
 
-              return (
-                <button
-                  key={bot.bot_id}
-                  onClick={() => onSelectBot(bot.bot_id)}
-                  className={cn(
-                    "w-full text-left p-4 rounded-2xl transition-all duration-300",
-                    "hover:bg-sidebar-accent hover:opacity-100",
-                    isSelected
-                      ? "bg-sidebar-accent shadow-md ring-2 ring-primary/30"
-                      : "bg-transparent opacity-70 hover:opacity-90",
-                    bot.bot_id === "wellness" && !isSelected && "opacity-85" // Emphasize wellness
-                  )}
-                >
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={cn(
-                        "w-11 h-11 rounded-xl flex items-center justify-center transition-all",
-                        colors.bg,
-                        isSelected && "ring-2 ring-offset-2 ring-primary/40 shadow-sm",
-                        bot.bot_id === "wellness" && "w-12 h-12" // Slightly larger for wellness
-                      )}
-                    >
-                      <Icon className={cn("w-5 h-5", colors.icon)} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3
+                return (
+                  <button
+                    key={bot.bot_id}
+                    onClick={() => onSelectBot(bot.bot_id)}
+                    disabled={isLoading}
+                    className={cn(
+                      "w-full text-left p-4 rounded-2xl transition-all duration-300",
+                      "hover:bg-sidebar-accent hover:opacity-100",
+                      isSelected
+                        ? "bg-sidebar-accent shadow-md ring-2 ring-primary/30"
+                        : "bg-transparent opacity-70 hover:opacity-90",
+                      bot.bot_id === "wellness" && !isSelected && "opacity-85", // Emphasize wellness
+                      isLoading && "opacity-50 pointer-events-none"
+                    )}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div
                         className={cn(
-                          "font-semibold text-base transition-colors mb-0.5",
-                          isSelected
-                            ? "text-primary"
-                            : "text-sidebar-foreground",
-                          bot.bot_id === "wellness" && !isSelected && "font-bold"
+                          "w-11 h-11 rounded-xl flex items-center justify-center transition-all",
+                          colors.bg,
+                          isSelected && "ring-2 ring-offset-2 ring-primary/40 shadow-sm",
+                          bot.bot_id === "wellness" && "w-12 h-12" // Slightly larger for wellness
                         )}
                       >
-                        {bot.title}
-                      </h3>
-                      {/* Description - Larger Font */}
-                      <p className={cn(
-                        "text-sm text-muted-foreground line-clamp-1 transition-all leading-relaxed",
-                        isSelected ? "opacity-100" : "opacity-80"
-                      )}>
-                        {bot.description}
-                      </p>
+                        <Icon className={cn("w-5 h-5", colors.icon)} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3
+                          className={cn(
+                            "font-semibold text-base transition-colors mb-0.5",
+                            isSelected ? "text-primary" : "text-sidebar-foreground",
+                            bot.bot_id === "wellness" && !isSelected && "font-bold"
+                          )}
+                        >
+                          {bot.title}
+                        </h3>
+                        {/* Description - Larger Font */}
+                        <p
+                          className={cn(
+                            "text-sm text-muted-foreground line-clamp-1 transition-all leading-relaxed",
+                            isSelected ? "opacity-100" : "opacity-80"
+                          )}
+                        >
+                          {bot.description}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </button>
-              )
-            })}
+                  </button>
+                )
+              })}
         </div>
       </nav>
 
