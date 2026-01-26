@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -171,28 +172,132 @@ const todaySchedule = [
   { time: "09:00 PM", activity: "Personal time & relaxation", done: false },
 ]
 
-export function PersonalizedDashboard() {
+interface PersonalizedDashboardProps {
+  botId?: string
+  onBotChange?: (botId: string) => void
+}
+
+export function PersonalizedDashboard({ botId = "wellness", onBotChange }: PersonalizedDashboardProps) {
+  const navigate = useNavigate()
   const [selectedDate] = useState(new Date())
+  const [enrolledCourses, setEnrolledCourses] = useState<number[]>([])
+  const [markedTasks, setMarkedTasks] = useState<number[]>([])
   const userName = "Priya"
+  
+  const handleBotClick = (selectedBotId: string) => {
+    onBotChange?.(selectedBotId)
+    // Navigate to home page with selected bot
+    navigate("/", { state: { botId: selectedBotId } })
+  }
+  
+  const handleStartBot = () => {
+    // Navigate to home page with current bot
+    navigate("/", { state: { botId } })
+  }
+  
+  const handleEnrollCourse = (courseId: number) => {
+    if (!enrolledCourses.includes(courseId)) {
+      setEnrolledCourses([...enrolledCourses, courseId])
+      alert(`✅ Successfully enrolled in course! Check your email for next steps.`)
+    }
+  }
+  
+  const handleLearnMore = (title: string) => {
+    alert(`📚 ${title}\n\nThis feature will open a detailed view with:\n✓ Complete course curriculum\n✓ Instructor profile\n✓ Student reviews\n✓ Pricing options\n✓ Certification details\n\nComing soon!`)
+  }
+  
+  const handleMarkDone = (taskIdx: number) => {
+    if (!markedTasks.includes(taskIdx)) {
+      setMarkedTasks([...markedTasks, taskIdx])
+    }
+  }
 
   return (
     <div className="h-full overflow-y-auto">
       <div className="p-6 space-y-6">
+      
+      {/* Agent Selector */}
+      <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-4 border-2 border-purple-200 shadow-md">
+        <h2 className="text-sm font-semibold text-purple-900 mb-3">MY SUPPORT TEAM</h2>
+        <div className="grid grid-cols-5 gap-3">
+          {[
+            { id: "wellness", name: "FitHer", emoji: "💪", desc: "Wellness & fitness" },
+            { id: "planner", name: "PlanPal", emoji: "📅", desc: "Master your time" },
+            { id: "speakup", name: "SpeakUp", emoji: "🛡️", desc: "Harassment & safety" },
+            { id: "upskill", name: "GrowthGuru", emoji: "🚀", desc: "Career coach" },
+            { id: "finance", name: "PaisaWise", emoji: "💰", desc: "Finance helper" },
+          ].map((agent) => (
+            <button
+              key={agent.id}
+              onClick={() => handleBotClick(agent.id)}
+              className={`p-3 rounded-xl text-left transition-all ${
+                botId === agent.id
+                  ? "bg-pink-100 border-2 border-pink-400 shadow-lg scale-105"
+                  : "bg-white border border-gray-200 hover:border-purple-300 hover:shadow-md"
+              }`}
+            >
+              <div className="text-2xl mb-1">{agent.emoji}</div>
+              <p className="font-semibold text-sm text-gray-900">{agent.name}</p>
+              <p className="text-xs text-gray-600 line-clamp-1">{agent.desc}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+      
       {/* Welcome Header with Avatar Greeting */}
       <div className="flex items-start justify-between bg-gradient-to-r from-pink-100 via-purple-100 to-rose-100 p-6 rounded-3xl border-2 border-pink-200 shadow-lg">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-600 via-purple-600 to-rose-600 bg-clip-text text-transparent mb-2">
-            Good afternoon, {userName}! 💝
+            {botId === "wellness" && "Good afternoon, " + userName + "! 💝"}
+            {botId === "planner" && "Welcome back, " + userName + "! 📅"}
+            {botId === "speakup" && "You're safe here, " + userName + " 🛡️"}
+            {botId === "upskill" && "Ready to grow, " + userName + "! 🚀"}
+            {botId === "finance" && "Let's build wealth, " + userName + "! 💰"}
           </h1>
           <p className="text-lg text-gray-700">
-            You have <span className="font-semibold text-pink-600">3 pending tasks</span> and{" "}
-            <span className="font-semibold text-rose-600">2 family alerts</span> today
+            {botId === "wellness" && (
+              <>
+                You have <span className="font-semibold text-pink-600">3 wellness sessions</span> and{" "}
+                <span className="font-semibold text-rose-600">2 energy tips</span> today
+              </>
+            )}
+            {botId === "planner" && (
+              <>
+                You have <span className="font-semibold text-blue-600">8 tasks</span> and{" "}
+                <span className="font-semibold text-purple-600">3 meetings</span> today
+              </>
+            )}
+            {botId === "speakup" && (
+              <>
+                Your conversations are <span className="font-semibold text-green-600">private & secure</span>.{" "}
+                <span className="font-semibold text-purple-600">24/7 support</span> available
+              </>
+            )}
+            {botId === "upskill" && (
+              <>
+                <span className="font-semibold text-purple-600">2 active courses</span> and{" "}
+                <span className="font-semibold text-blue-600">5 career goals</span> in progress
+              </>
+            )}
+            {botId === "finance" && (
+              <>
+                Savings goal: <span className="font-semibold text-green-600">72.5% complete</span>.{" "}
+                <span className="font-semibold text-orange-600">₹28,000</span> budget remaining
+              </>
+            )}
           </p>
           <p className="text-sm text-purple-600 mt-2 italic">✨ You're doing amazing! Keep up the great work!</p>
         </div>
-        <Button className="bg-gradient-to-r from-pink-500 via-purple-500 to-rose-500 hover:from-pink-600 hover:via-purple-600 hover:to-rose-600 text-white shadow-lg">
+        <Button 
+          onClick={handleStartBot}
+          className="bg-gradient-to-r from-pink-500 via-purple-500 to-rose-500 hover:from-pink-600 hover:via-purple-600 hover:to-rose-600 text-white shadow-lg"
+        >
           <Sparkles className="w-4 h-4 mr-2" />
-          AI Planner
+          {botId === "wellness" && "Start Wellness"}
+          {botId === "planner" && "AI Planner"}
+          {botId === "speakup" && "Talk Privately"}
+          {botId === "upskill" && "Find Courses"}
+          {botId === "finance" && "Track Budget"}
         </Button>
       </div>
 
@@ -535,8 +640,17 @@ export function PersonalizedDashboard() {
                     <span className="text-xs text-gray-600 flex items-center gap-1">
                       👥 {course.enrolled} enrolled
                     </span>
-                    <Button size="sm" className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-full shadow-md">
-                      Enroll Now
+                    <Button 
+                      size="sm" 
+                      onClick={() => handleEnrollCourse(course.id)}
+                      disabled={enrolledCourses.includes(course.id)}
+                      className={`rounded-full shadow-md transition-all ${
+                        enrolledCourses.includes(course.id)
+                          ? 'bg-green-500 hover:bg-green-600'
+                          : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600'
+                      } text-white`}
+                    >
+                      {enrolledCourses.includes(course.id) ? '✓ Enrolled' : 'Enroll Now'}
                     </Button>
                   </div>
                 </div>
@@ -653,14 +767,19 @@ export function PersonalizedDashboard() {
                       <Badge className="bg-gradient-to-r from-green-200 to-emerald-200 text-green-800 border-green-300 rounded-full px-3 py-1">
                         🎯 Potential: {rec.potential}
                       </Badge>
-                      <Button size="sm" variant="outline" className="border-purple-300 text-purple-600 hover:bg-purple-100 rounded-full">
-                        Learn More
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => handleLearnMore(rec.title)}
+                        className="border-purple-300 text-purple-600 hover:bg-purple-100 rounded-full hover:shadow-md transition-all"
+                      >
+                        Learn More →
                       </Button>
                     </div>
                   </div>
                 ))}
 
-                <div className="mt-6 p-5 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200">
+                <div className="mt-6 p-5 bg-linear-to-r from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200">
                   <h3 className="font-bold text-gray-900 mb-2">💡 Smart Tip</h3>
                   <p className="text-sm text-gray-700">
                     Based on your spending patterns, you can save an additional ₹8,000 per month by reducing dining out expenses by 30%.
@@ -692,29 +811,39 @@ export function PersonalizedDashboard() {
                 <div
                   key={idx}
                   className={`p-4 rounded-lg border-2 flex items-center gap-4 transition-all ${
-                    item.done
+                    item.done || markedTasks.includes(idx)
                       ? "border-green-200 bg-green-50 opacity-60"
-                      : "border-gray-200 bg-white hover:border-teal-300"
+                      : "border-gray-200 bg-white hover:border-teal-300 hover:shadow-sm"
                   }`}
                 >
-                  <div className="flex-shrink-0">
-                    {item.done ? (
+                  <div className="shrink-0">
+                    {(item.done || markedTasks.includes(idx)) ? (
                       <CheckCircle2 className="w-6 h-6 text-green-600" />
                     ) : (
-                      <div className="w-6 h-6 rounded-full border-2 border-gray-300" />
+                      <div className="w-6 h-6 rounded-full border-2 border-gray-300 hover:border-teal-400 transition-colors" />
                     )}
                   </div>
                   <div className="flex-1 flex items-center justify-between">
                     <div>
                       <span className="font-bold text-gray-900">{item.time}</span>
-                      <span className={`ml-3 ${item.done ? "line-through text-gray-500" : "text-gray-700"}`}>
+                      <span className={`ml-3 ${(item.done || markedTasks.includes(idx)) ? "line-through text-gray-500" : "text-gray-700"}`}>
                         {item.activity}
                       </span>
                     </div>
-                    {!item.done && (
-                      <Button size="sm" variant="outline">
-                        Mark Done
+                    {!item.done && !markedTasks.includes(idx) && (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleMarkDone(idx)}
+                        className="hover:bg-green-50 hover:border-green-400 hover:text-green-700 transition-all"
+                      >
+                        ✓ Mark Done
                       </Button>
+                    )}
+                    {markedTasks.includes(idx) && (
+                      <Badge className="bg-green-100 text-green-700 border-green-300">
+                        ✓ Completed
+                      </Badge>
                     )}
                   </div>
                 </div>

@@ -45,7 +45,7 @@ function MessageBubble({
       </div>
       <div
         className={cn(
-          "rounded-2xl px-4 py-3 text-sm leading-relaxed",
+          "rounded-2xl px-4 py- text-sm leading-relaxed",
           isUser
             ? "bg-primary text-primary-foreground rounded-tr-sm"
             : "bg-card border border-border text-card-foreground rounded-tl-sm"
@@ -104,7 +104,7 @@ function WelcomeScreen({ bot }: { bot: Bot | null }) {
             <span className="text-2xl">S</span>
           </div>
           <h2 className="text-xl font-semibold text-foreground mb-2">
-            Welcome to SheThrive
+            Welcome to HerSpace
           </h2>
           <p className="text-muted-foreground">
             Select an assistant from the sidebar to start a conversation. Each assistant
@@ -173,7 +173,7 @@ export function ChatInterface({
             </>
           ) : (
             <>
-              <h2 className="font-semibold text-foreground">SheThrive</h2>
+              <h2 className="font-semibold text-foreground">HerSpace</h2>
               <p className="text-sm text-muted-foreground">
                 Select an assistant to begin
               </p>
