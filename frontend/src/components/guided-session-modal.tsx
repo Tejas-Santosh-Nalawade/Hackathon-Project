@@ -106,9 +106,9 @@ export function GuidedSessionModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md animate-in fade-in duration-200 p-4">
-      <div className="bg-card rounded-3xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300 border-2 border-pink-300">
+      <div className="bg-card rounded-3xl shadow-2xl w-full max-w-5xl max-h-[95vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300 border-2 border-pink-300">
         {/* Header */}
-        <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-rose-500 p-8 text-white relative overflow-hidden sticky top-0 z-20">
+        <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-rose-500 p-6 text-white relative overflow-hidden shrink-0 z-20">
           <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
           <div className="relative z-10">
           <div className="flex items-center justify-between mb-3">
@@ -137,8 +137,8 @@ export function GuidedSessionModal({
           <p className="text-white/95 text-base font-medium">Guided by {botTitle}</p>
           
           {/* Progress Bar */}
-          <div className="mt-6">
-            <div className="flex justify-between text-sm text-white/90 mb-2 font-medium">
+          <div className="mt-4">
+            <div className="flex justify-between text-xs text-white/90 mb-2 font-medium">
               <span>Session Progress</span>
               <span className="bg-white/20 px-3 py-0.5 rounded-full">{completedSteps.length} of {steps.length} completed</span>
             </div>
@@ -153,15 +153,15 @@ export function GuidedSessionModal({
         </div>
 
         {/* Avatar Demonstration Area */}
-        <div className="bg-gradient-to-br from-pink-50 via-purple-50 to-white p-8 border-b-2 border-pink-200 flex-shrink-0">
+        <div className="bg-linear-to-br from-pink-50 via-purple-50 to-white p-4 border-b-2 border-pink-200 shrink-0">
           <div className="flex flex-col items-center justify-center">
-            <div className="relative mb-4">
+            <div className="relative mb-2">
               {/* Animated Avatar Circle */}
-              <div className={`w-32 h-32 rounded-full bg-gradient-to-br from-pink-300 via-purple-300 to-rose-300 flex items-center justify-center shadow-2xl ${
+              <div className={`w-20 h-20 rounded-full bg-linear-to-br from-pink-300 via-purple-300 to-rose-300 flex items-center justify-center shadow-2xl ${
                 isPlaying ? 'animate-pulse' : ''
               }`}>
-                <div className="w-28 h-28 rounded-full bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
-                  <div className="text-5xl">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
+                  <div className="text-3xl">
                     {isPlaying ? '🧘‍♀️' : '💃'}
                   </div>
                 </div>
@@ -192,8 +192,8 @@ export function GuidedSessionModal({
           </div>
         </div>
 
-        {/* Steps Content */}
-        <div className="flex-1 overflow-y-auto p-8 bg-gradient-to-b from-transparent to-muted/20" style={{ scrollbarWidth: 'thin', scrollbarColor: '#ec4899 #fce7f3' }}>
+        {/* Steps Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto p-6 bg-gradient-to-b from-transparent to-muted/20 min-h-0" style={{ scrollbarWidth: 'thin', scrollbarColor: '#ec4899 #fce7f3' }}>
           <div className="space-y-4">
             {steps.map((step, index) => {
               const isCompleted = completedSteps.includes(step.id)
@@ -211,7 +211,7 @@ export function GuidedSessionModal({
                       : "bg-muted/30 border border-border/50 opacity-60"
                   }`}
                 >
-                  <div className="flex-shrink-0">
+                  <div className="shrink-0">
                     {isCompleted ? (
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-md">
                         <CheckCircle2 className="w-6 h-6 text-white" />
@@ -257,7 +257,7 @@ export function GuidedSessionModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="p-6 border-t-2 border-pink-200 bg-gradient-to-r from-pink-50 to-purple-50 flex justify-between items-center flex-shrink-0">
+        <div className="p-6 border-t-2 border-pink-200 bg-gradient-to-r from-pink-50 to-purple-50 flex justify-between items-center shrink-0">
           <div>
             {completedSteps.length === steps.length ? (
               <div className="flex items-center gap-2">

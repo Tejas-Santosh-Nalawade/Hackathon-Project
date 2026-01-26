@@ -136,18 +136,18 @@ export function ChatPanel({
     : "Type a message..."
 
   return (
-    <div className="relative bg-muted/30 rounded-3xl border border-border p-6 flex flex-col h-full">
-      {/* Private Mode Indicator */}
-      <div className="absolute top-4 right-4 flex items-center gap-3 text-muted-foreground z-10">
-        <div className="flex items-center gap-1.5">
-          <Lock className="w-3 h-3" />
-          <span className="text-xs">Private</span>
-        </div>
+    <div className="h-full relative bg-muted/30 rounded-3xl border-2 border-border shadow-lg flex flex-col overflow-hidden">
+      {/* Private Mode Indicator - Moved to top-left */}
+      <div className="absolute top-2 left-4 flex items-center gap-1.5 bg-muted/50 px-2 py-1 rounded-full text-muted-foreground z-10 backdrop-blur-sm">
+        <Lock className="w-3 h-3" />
+        <span className="text-[10px] font-medium uppercase tracking-wide">Private</span>
       </div>
-      {/* Chat Messages Area - Scrollable */}
+      
+      {/* Chat Messages Area - Scrollable with fixed height */}
       <div 
         ref={chatContainerRef}
-        className="flex-1 overflow-y-auto mb-4 space-y-4 min-h-[300px] max-h-[500px] scroll-smooth"
+        className="flex-1 overflow-y-auto px-6 pt-12 pb-4 space-y-4 scroll-smooth"
+        style={{ scrollbarWidth: 'thin', scrollbarColor: '#ec4899 #fce7f3' }}
       >
         {/* Show messages or default greeting */}
         {messages.length === 0 ? (
@@ -212,8 +212,9 @@ export function ChatPanel({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area - Always available for typing */}
-      <form onSubmit={handleSubmit} className="mt-4">
+      {/* Input Area - Fixed at bottom */}
+      <div className="shrink-0 px-6 pb-6 pt-3 bg-gradient-to-t from-background/95 to-transparent">
+        <form onSubmit={handleSubmit}>
         {selectedFile && (
           <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground bg-card px-3 py-2 rounded-lg border border-border">
             <Paperclip className="w-3 h-3" />
@@ -258,7 +259,7 @@ export function ChatPanel({
               disabled={!bot || isLoading}
               size="icon"
               variant="ghost"
-              className="h-10 w-10 rounded-xl hover:bg-accent transition-colors"
+              className="h-10 w-10 rounded-xl hover:bg-accent hover:scale-110 active:scale-95 transition-all"
             >
               <Paperclip className="w-4 h-4" />
               <span className="sr-only">Attach file</span>
@@ -267,14 +268,15 @@ export function ChatPanel({
               type="submit"
               disabled={!bot || !input.trim() || isLoading}
               size="icon"
-              className="h-10 w-10 rounded-xl hover:scale-105 transition-transform"
+              className="h-10 w-10 rounded-xl hover:scale-110 active:scale-95 transition-transform shadow-md"
             >
               <Send className="w-4 h-4" />
               <span className="sr-only">Send message</span>
             </Button>
           </div>
         </div>
-      </form>
+        </form>
+      </div>
     </div>
   )
 }

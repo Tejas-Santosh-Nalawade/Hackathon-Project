@@ -8,6 +8,7 @@ import { LayoutDashboard, MessageSquare } from "lucide-react"
 export default function Home() {
   const navigate = useNavigate()
   const [view, setView] = useState<"chat" | "dashboard">("dashboard")
+  const [selectedBotId, setSelectedBotId] = useState<string>("wellness")
 
   useEffect(() => {
     // Check if user is authenticated
@@ -29,7 +30,7 @@ export default function Home() {
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* View Toggle */}
-      <div className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="border-b border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-center gap-2">
             <Button
@@ -56,7 +57,11 @@ export default function Home() {
 
       {/* Content */}
       <div className="flex-1 overflow-hidden">
-        {view === "dashboard" ? <PersonalizedDashboard /> : <Dashboard />}
+        {view === "dashboard" ? (
+          <PersonalizedDashboard botId={selectedBotId} onBotChange={setSelectedBotId} />
+        ) : (
+          <Dashboard onBotChange={setSelectedBotId} />
+        )}
       </div>
     </div>
   )

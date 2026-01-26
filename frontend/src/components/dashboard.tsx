@@ -63,7 +63,11 @@ const fallbackBots: Bot[] = [
 const MAX_MESSAGE_LENGTH = 2000
 const HISTORY_SLICE = 12
 
-export function Dashboard() {
+interface DashboardProps {
+  onBotChange?: (botId: string) => void
+}
+
+export function Dashboard({ onBotChange }: DashboardProps = {}) {
   const navigate = useNavigate()
   const [selectedBotId, setSelectedBotId] = useState<string>("wellness") // Default to wellness
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -133,7 +137,8 @@ export function Dashboard() {
   const handleSelectBot = useCallback((botId: string) => {
     setSelectedBotId(botId)
     setIsSidebarOpen(false)
-  }, [])
+    onBotChange?.(botId) // Notify parent of bot change
+  }, [onBotChange])
 
   const handleSendMessage = useCallback(
     async (message: string) => {
