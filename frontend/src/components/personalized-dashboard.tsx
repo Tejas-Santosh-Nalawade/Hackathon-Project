@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -177,10 +178,22 @@ interface PersonalizedDashboardProps {
 }
 
 export function PersonalizedDashboard({ botId = "wellness", onBotChange }: PersonalizedDashboardProps) {
+  const navigate = useNavigate()
   const [selectedDate] = useState(new Date())
   const [enrolledCourses, setEnrolledCourses] = useState<number[]>([])
   const [markedTasks, setMarkedTasks] = useState<number[]>([])
   const userName = "Priya"
+  
+  const handleBotClick = (selectedBotId: string) => {
+    onBotChange?.(selectedBotId)
+    // Navigate to home page with selected bot
+    navigate("/", { state: { botId: selectedBotId } })
+  }
+  
+  const handleStartBot = () => {
+    // Navigate to home page with current bot
+    navigate("/", { state: { botId } })
+  }
   
   const handleEnrollCourse = (courseId: number) => {
     if (!enrolledCourses.includes(courseId)) {
@@ -216,7 +229,7 @@ export function PersonalizedDashboard({ botId = "wellness", onBotChange }: Perso
           ].map((agent) => (
             <button
               key={agent.id}
-              onClick={() => onBotChange?.(agent.id)}
+              onClick={() => handleBotClick(agent.id)}
               className={`p-3 rounded-xl text-left transition-all ${
                 botId === agent.id
                   ? "bg-pink-100 border-2 border-pink-400 shadow-lg scale-105"
@@ -275,7 +288,10 @@ export function PersonalizedDashboard({ botId = "wellness", onBotChange }: Perso
           </p>
           <p className="text-sm text-purple-600 mt-2 italic">✨ You're doing amazing! Keep up the great work!</p>
         </div>
-        <Button className="bg-gradient-to-r from-pink-500 via-purple-500 to-rose-500 hover:from-pink-600 hover:via-purple-600 hover:to-rose-600 text-white shadow-lg">
+        <Button 
+          onClick={handleStartBot}
+          className="bg-gradient-to-r from-pink-500 via-purple-500 to-rose-500 hover:from-pink-600 hover:via-purple-600 hover:to-rose-600 text-white shadow-lg"
+        >
           <Sparkles className="w-4 h-4 mr-2" />
           {botId === "wellness" && "Start Wellness"}
           {botId === "planner" && "AI Planner"}

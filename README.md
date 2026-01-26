@@ -1,4 +1,4 @@
-# SheThrive - AI Support Platform for Working Women
+# HerSpace - AI Support Platform for Working Women
 
 A holistic AI-powered support platform designed for working women in India, providing instant access to personalized guidance across wellness, career, safety, and financial domains.
 

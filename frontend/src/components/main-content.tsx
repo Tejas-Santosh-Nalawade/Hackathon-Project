@@ -18,127 +18,6 @@ interface MainContentProps {
   userName: string
 }
 
-function WelcomeSection({ userName }: { userName: string }) {
-  return (
-    <div className="mb-8">
-      <h1 className="text-3xl lg:text-4xl text-foreground mb-2">
-        <span className="font-sans">Welcome back, </span>
-        <span className="font-serif italic text-primary">{userName}</span>
-      </h1>
-      <p className="text-muted-foreground text-lg">
-        {"Take a deep breath. You've been working hard, let's find a moment for yourself."}
-      </p>
-    </div>
-  )
-}
-
-function PersonalizedResets({ cards }: { cards: typeof agentCards['wellness'] }) {
-  const [completedCards, setCompletedCards] = React.useState<string[]>([])
-  const [showCheckin, setShowCheckin] = React.useState(false)
-
-  const handleStartReset = (title: string) => {
-    // Simulate completion after the activity
-    setTimeout(() => {
-      setCompletedCards(prev => [...prev, title])
-      setShowCheckin(true)
-    }, 2000)
-  }
-
-  const handleCheckinResponse = () => {
-    setShowCheckin(false)
-  }
-
-  return (
-    <div className="mb-8">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-primary" />
-          <h2 className="font-semibold text-foreground">Personalized Resets</h2>
-        </div>
-        <button className="text-sm text-[oklch(0.72_0.12_175)] hover:underline font-medium">
-          View Library
-        </button>
-      </div>
-      
-      {/* Emotional Check-in after session */}
-      {showCheckin && (
-        <div className="mb-4 p-4 bg-card border border-border rounded-2xl shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
-          <p className="text-sm text-foreground mb-3">How do you feel right now?</p>
-          <div className="flex gap-2">
-            <button 
-              onClick={handleCheckinResponse}
-              className="px-4 py-2 text-xs rounded-lg bg-teal-50 text-teal-700 hover:bg-teal-100 transition-colors"
-            >
-              Lighter
-            </button>
-            <button 
-              onClick={handleCheckinResponse}
-              className="px-4 py-2 text-xs rounded-lg bg-muted text-muted-foreground hover:bg-accent transition-colors"
-            >
-              Same
-            </button>
-            <button 
-              onClick={handleCheckinResponse}
-              className="px-4 py-2 text-xs rounded-lg bg-muted text-muted-foreground hover:bg-accent transition-colors"
-            >
-              Still tired
-            </button>
-          </div>
-        </div>
-      )}
-      
-      <div className="flex gap-4 flex-wrap">
-        {cards.map((card) => {
-          const isCompleted = completedCards.includes(card.title)
-          
-          return (
-            <div
-              key={card.title}
-              className={cn(
-                "flex-1 min-w-[180px] max-w-[240px] p-4 rounded-2xl bg-card border border-border shadow-sm",
-                "hover:shadow-md transition-all cursor-pointer group",
-                isCompleted && "border-teal-200 bg-teal-50/30"
-              )}
-            >
-              <div className="flex items-center justify-between">
-                <span className={cn("text-xs font-semibold uppercase tracking-wider", card.color)}>
-                  {card.type}
-                </span>
-                {/* Time label - always visible */}
-                <div className="flex items-center gap-1 text-muted-foreground">
-                  <Clock className="w-3 h-3" />
-                  <span className="text-xs font-medium">{card.duration}</span>
-                </div>
-              </div>
-              <h3 className="font-medium text-foreground mt-2">{card.title}</h3>
-              
-              {/* Soft CTA button with emotion-based language */}
-              <button
-                onClick={() => handleStartReset(card.title)}
-                className={cn(
-                  "mt-3 w-full py-2 px-3 rounded-xl text-xs font-medium transition-all",
-                  isCompleted 
-                    ? "bg-teal-100 text-teal-700"
-                    : cn(card.bgColor, card.color, "hover:opacity-80")
-                )}
-              >
-                {isCompleted ? (
-                  <span className="flex items-center justify-center gap-1.5">
-                    <Check className="w-3 h-3" />
-                    Done for now
-                  </span>
-                ) : (
-                  card.cta
-                )}
-              </button>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
 // Agent-specific cards configuration
 const agentCards = {
   wellness: [
@@ -166,31 +45,47 @@ const agentCards = {
       bgColor: "bg-amber-50",
       cta: "Let's try",
     },
+    {
+      type: "POSTURE",
+      title: "Desk Stretches",
+      duration: "3 min",
+      color: "text-purple-600",
+      bgColor: "bg-purple-50",
+      cta: "Start now",
+    },
   ],
   planner: [
     {
       type: "TODAY",
       title: "Optimize My Day",
       duration: "5 min",
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
+      color: "text-rose-500",
+      bgColor: "bg-rose-50",
       cta: "Plan now",
     },
     {
       type: "BALANCE",
       title: "Work-Life Balance Check",
       duration: "3 min",
-      color: "text-purple-600",
-      bgColor: "bg-purple-50",
+      color: "text-teal-600",
+      bgColor: "bg-teal-50",
       cta: "Review",
     },
     {
       type: "BUFFER",
       title: "Add Buffer Time",
       duration: "2 min",
-      color: "text-indigo-600",
-      bgColor: "bg-indigo-50",
+      color: "text-amber-600",
+      bgColor: "bg-amber-50",
       cta: "Adjust schedule",
+    },
+    {
+      type: "GOALS",
+      title: "Set Daily Goals",
+      duration: "4 min",
+      color: "text-purple-600",
+      bgColor: "bg-purple-50",
+      cta: "Set goals",
     },
   ],
   speakup: [
@@ -198,25 +93,33 @@ const agentCards = {
       type: "SUPPORT",
       title: "Private Conversation",
       duration: "Anytime",
-      color: "text-pink-600",
-      bgColor: "bg-pink-50",
+      color: "text-rose-500",
+      bgColor: "bg-rose-50",
       cta: "Talk privately",
     },
     {
       type: "RESOURCES",
       title: "Safety Resources",
       duration: "Quick view",
-      color: "text-rose-600",
-      bgColor: "bg-rose-50",
+      color: "text-teal-600",
+      bgColor: "bg-teal-50",
       cta: "View options",
     },
     {
       type: "HELPLINE",
       title: "Emergency Contacts",
       duration: "24/7",
-      color: "text-red-600",
-      bgColor: "bg-red-50",
+      color: "text-amber-600",
+      bgColor: "bg-amber-50",
       cta: "Quick access",
+    },
+    {
+      type: "DOCUMENT",
+      title: "Document Incident",
+      duration: "Secure",
+      color: "text-purple-600",
+      bgColor: "bg-purple-50",
+      cta: "Start recording",
     },
   ],
   upskill: [
@@ -224,25 +127,33 @@ const agentCards = {
       type: "COURSES",
       title: "Recommended Courses",
       duration: "4-6 weeks",
-      color: "text-violet-600",
-      bgColor: "bg-violet-50",
+      color: "text-rose-500",
+      bgColor: "bg-rose-50",
       cta: "Browse",
     },
     {
       type: "SKILLS",
       title: "Skill Gap Analysis",
       duration: "10 min",
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
+      color: "text-teal-600",
+      bgColor: "bg-teal-50",
       cta: "Analyze",
     },
     {
       type: "RESUME",
       title: "Resume Review",
       duration: "15 min",
-      color: "text-cyan-600",
-      bgColor: "bg-cyan-50",
+      color: "text-amber-600",
+      bgColor: "bg-amber-50",
       cta: "Improve",
+    },
+    {
+      type: "INTERVIEW",
+      title: "Mock Interview",
+      duration: "20 min",
+      color: "text-purple-600",
+      bgColor: "bg-purple-50",
+      cta: "Practice",
     },
   ],
   finance: [
@@ -250,25 +161,33 @@ const agentCards = {
       type: "BUDGET",
       title: "50/30/20 Budget",
       duration: "5 min",
-      color: "text-emerald-600",
-      bgColor: "bg-emerald-50",
+      color: "text-rose-500",
+      bgColor: "bg-rose-50",
       cta: "Set up",
     },
     {
       type: "SAVINGS",
       title: "Savings Goal Tracker",
       duration: "Quick check",
-      color: "text-green-600",
-      bgColor: "bg-green-50",
+      color: "text-teal-600",
+      bgColor: "bg-teal-50",
       cta: "Track progress",
     },
     {
       type: "TAX",
       title: "Tax Planning (India)",
       duration: "10 min",
-      color: "text-teal-600",
-      bgColor: "bg-teal-50",
+      color: "text-amber-600",
+      bgColor: "bg-amber-50",
       cta: "Plan ahead",
+    },
+    {
+      type: "INVEST",
+      title: "Investment Basics",
+      duration: "8 min",
+      color: "text-purple-600",
+      bgColor: "bg-purple-50",
+      cta: "Learn more",
     },
   ],
 }
@@ -307,42 +226,11 @@ export function MainContent({
   }, [])
 
   return (
-    <main className="flex-1 flex flex-col h-full overflow-hidden">
-      {/* Top Section: Welcome + Today's Focus - Fixed Height */}
-      <div className="shrink-0 px-6 py-4 border-b border-border bg-gradient-to-r from-teal-50/50 to-blue-50/50">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1">
-            <h1 className="text-2xl font-semibold text-foreground mb-1">
-              <span className="font-sans">Welcome back, </span>
-              <span className="font-serif italic text-primary">{userName}</span>
-            </h1>
-            <p className="text-muted-foreground text-sm">
-              {"Take a deep breath. You've been working hard, let's find a moment for yourself."}
-            </p>
-          </div>
-          
-          {/* Dynamic Today's Focus */}
-          <div className="ml-4 bg-white rounded-xl shadow-md border-2 border-teal-200 p-3 min-w-50">
-            <div className="flex items-center gap-2 mb-1">
-              <Clock className="w-4 h-4 text-teal-600" />
-              <h3 className="font-semibold text-xs text-foreground">Today's Focus</h3>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-teal-600">{focusMinutes}</span>
-              <span className="text-xs text-muted-foreground">min</span>
-            </div>
-            <p className="text-xs font-medium text-foreground mt-1 line-clamp-1">{focusTask}</p>
-            <div className="mt-2 h-1 bg-teal-100 rounded-full overflow-hidden">
-              <div className="h-full bg-teal-500 rounded-full" style={{ width: '65%' }} />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content: Fixed height split view */}
-      <div className="flex-1 flex gap-4 p-4 overflow-hidden min-h-0">
+    <main className="flex-1 flex flex-col h-full overflow-y-auto">
+      {/* Main Content: Scrollable split view */}
+      <div className="flex-1 flex gap-4 p-4 min-h-0">
         {/* Left Side: Voice Avatar - Fixed, Scrollable */}
-        <div className="w-[45%] flex flex-col bg-gradient-to-br from-teal-50 via-blue-50 to-purple-50 rounded-2xl shadow-md border border-teal-100 overflow-hidden">
+        <div className="w-[45%] flex flex-col bg-linear-to-br from-teal-50 via-blue-50 to-purple-50 rounded-2xl shadow-md border border-teal-100 overflow-hidden">
           <div className="flex-1 overflow-y-auto p-4" style={{ scrollbarWidth: 'thin', scrollbarColor: '#14b8a6 #ccfbf1' }}>
             <VoiceAvatar bot={bot} onSendMessage={onSendMessage} />
           </div>

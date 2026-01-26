@@ -65,11 +65,12 @@ const HISTORY_SLICE = 12
 
 interface DashboardProps {
   onBotChange?: (botId: string) => void
+  selectedBotId?: string
 }
 
-export function Dashboard({ onBotChange }: DashboardProps = {}) {
+export function Dashboard({ onBotChange, selectedBotId: propSelectedBotId }: DashboardProps = {}) {
   const navigate = useNavigate()
-  const [selectedBotId, setSelectedBotId] = useState<string>("wellness") // Default to wellness
+  const [selectedBotId, setSelectedBotId] = useState<string>(propSelectedBotId || "wellness") // Use prop or default to wellness
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [searchResults, setSearchResults] = useState<SearchResult[] | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -133,6 +134,13 @@ export function Dashboard({ onBotChange }: DashboardProps = {}) {
       setSearchResults(null)
     }
   }, [selectedBotId])
+
+  // Update selectedBotId when prop changes
+  useEffect(() => {
+    if (propSelectedBotId) {
+      setSelectedBotId(propSelectedBotId)
+    }
+  }, [propSelectedBotId])
 
   const handleSelectBot = useCallback((botId: string) => {
     setSelectedBotId(botId)
@@ -237,8 +245,9 @@ export function Dashboard({ onBotChange }: DashboardProps = {}) {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header */}
-        <header className="flex items-center justify-between px-4 lg:px-8 py-4 border-b border-border bg-card">
+        <header className="flex items-center justify-between px-4 lg:px-8 py-3 border-b border-border bg-card">
           <div className="flex items-center gap-3 lg:hidden">
+            {/* Mobile Menu Toggle */}
             <Button
               variant="ghost"
               size="icon"
@@ -256,7 +265,7 @@ export function Dashboard({ onBotChange }: DashboardProps = {}) {
               <input
                 type="text"
                 placeholder="Search moments..."
-                className="w-full pl-10 pr-4 py-2.5 rounded-full bg-muted border-0 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="w-full pl-10 pr-4 py-2 rounded-full bg-muted border-0 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
           </div>
@@ -319,6 +328,13 @@ export function Dashboard({ onBotChange }: DashboardProps = {}) {
                 <DropdownMenuItem className="cursor-pointer">
                   <Settings className="w-4 h-4 mr-2" />
                   Settings
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className="cursor-pointer"
+                  onClick={() => navigate("/dashboard")}
+                >
+                  <BarChart3 className="w-4 h-4 mr-2" />
+                  My Dashboard
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   className="cursor-pointer"

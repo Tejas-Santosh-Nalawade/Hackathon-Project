@@ -1,16 +1,211 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from "react"
-import { Mic, MicOff, Volume2, VolumeX, Loader2, Play } from "lucide-react"
+import { useState, useEffect, useRef } from "react"
+import { Mic, MicOff, Volume2, VolumeX, Loader2, Play, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getVoiceAgent } from "@/lib/voice-agent"
 import { GuidedSessionModal } from "@/components/guided-session-modal"
 import { getSessionsForBot, type GuidedSession } from "@/lib/guided-sessions"
 import type { Bot } from "@/lib/types"
+import { cn } from "@/lib/utils"
 
 interface VoiceAvatarProps {
   bot: Bot | null
   onSendMessage?: (message: string) => void
+}
+
+// Agent-specific cards configuration
+const agentCards = {
+  wellness: [
+    {
+      type: "PHYSICAL",
+      title: "Sitting Neck Relief",
+      duration: "2 min",
+      color: "text-rose-500",
+      bgColor: "bg-rose-50",
+      borderColor: "border-rose-300",
+      cta: "Begin gently",
+    },
+    {
+      type: "MENTAL",
+      title: "Box Breathing",
+      duration: "3 min",
+      color: "text-teal-600",
+      bgColor: "bg-teal-50",
+      borderColor: "border-teal-300",
+      cta: "Guide me",
+    },
+    {
+      type: "EYES",
+      title: "Eye Yoga",
+      duration: "1 min",
+      color: "text-amber-600",
+      bgColor: "bg-amber-50",
+      borderColor: "border-amber-300",
+      cta: "Let's try",
+    },
+    {
+      type: "POSTURE",
+      title: "Desk Stretches",
+      duration: "3 min",
+      color: "text-purple-600",
+      bgColor: "bg-purple-50",
+      borderColor: "border-purple-300",
+      cta: "Start now",
+    },
+  ],
+  planner: [
+    {
+      type: "TODAY",
+      title: "Optimize My Day",
+      duration: "5 min",
+      color: "text-rose-500",
+      bgColor: "bg-rose-50",
+      borderColor: "border-rose-300",
+      cta: "Plan now",
+    },
+    {
+      type: "BALANCE",
+      title: "Work-Life Balance Check",
+      duration: "3 min",
+      color: "text-teal-600",
+      bgColor: "bg-teal-50",
+      borderColor: "border-teal-300",
+      cta: "Review",
+    },
+    {
+      type: "BUFFER",
+      title: "Add Buffer Time",
+      duration: "2 min",
+      color: "text-amber-600",
+      bgColor: "bg-amber-50",
+      borderColor: "border-amber-300",
+      cta: "Adjust schedule",
+    },
+    {
+      type: "GOALS",
+      title: "Set Daily Goals",
+      duration: "4 min",
+      color: "text-purple-600",
+      bgColor: "bg-purple-50",
+      borderColor: "border-purple-300",
+      cta: "Set goals",
+    },
+  ],
+  speakup: [
+    {
+      type: "SUPPORT",
+      title: "Private Conversation",
+      duration: "Anytime",
+      color: "text-rose-500",
+      bgColor: "bg-rose-50",
+      borderColor: "border-rose-300",
+      cta: "Talk privately",
+    },
+    {
+      type: "RESOURCES",
+      title: "Safety Resources",
+      duration: "Quick view",
+      color: "text-teal-600",
+      bgColor: "bg-teal-50",
+      borderColor: "border-teal-300",
+      cta: "View options",
+    },
+    {
+      type: "HELPLINE",
+      title: "Emergency Contacts",
+      duration: "24/7",
+      color: "text-amber-600",
+      bgColor: "bg-amber-50",
+      borderColor: "border-amber-300",
+      cta: "Quick access",
+    },
+    {
+      type: "DOCUMENT",
+      title: "Document Incident",
+      duration: "Secure",
+      color: "text-purple-600",
+      bgColor: "bg-purple-50",
+      borderColor: "border-purple-300",
+      cta: "Start recording",
+    },
+  ],
+  upskill: [
+    {
+      type: "COURSES",
+      title: "Recommended Courses",
+      duration: "4-6 weeks",
+      color: "text-rose-500",
+      bgColor: "bg-rose-50",
+      borderColor: "border-rose-300",
+      cta: "Browse",
+    },
+    {
+      type: "SKILLS",
+      title: "Skill Gap Analysis",
+      duration: "10 min",
+      color: "text-teal-600",
+      bgColor: "bg-teal-50",
+      borderColor: "border-teal-300",
+      cta: "Analyze",
+    },
+    {
+      type: "RESUME",
+      title: "Resume Review",
+      duration: "15 min",
+      color: "text-amber-600",
+      bgColor: "bg-amber-50",
+      borderColor: "border-amber-300",
+      cta: "Improve",
+    },
+    {
+      type: "INTERVIEW",
+      title: "Mock Interview",
+      duration: "20 min",
+      color: "text-purple-600",
+      bgColor: "bg-purple-50",
+      borderColor: "border-purple-300",
+      cta: "Practice",
+    },
+  ],
+  finance: [
+    {
+      type: "BUDGET",
+      title: "50/30/20 Budget",
+      duration: "5 min",
+      color: "text-rose-500",
+      bgColor: "bg-rose-50",
+      borderColor: "border-rose-300",
+      cta: "Set up",
+    },
+    {
+      type: "SAVINGS",
+      title: "Savings Goal Tracker",
+      duration: "Quick check",
+      color: "text-teal-600",
+      bgColor: "bg-teal-50",
+      borderColor: "border-teal-300",
+      cta: "Track progress",
+    },
+    {
+      type: "TAX",
+      title: "Tax Planning (India)",
+      duration: "10 min",
+      color: "text-amber-600",
+      bgColor: "bg-amber-50",
+      borderColor: "border-amber-300",
+      cta: "Plan ahead",
+    },
+    {
+      type: "INVEST",
+      title: "Investment Basics",
+      duration: "8 min",
+      color: "text-purple-600",
+      bgColor: "bg-purple-50",
+      borderColor: "border-purple-300",
+      cta: "Learn more",
+    },
+  ],
 }
 
 export function VoiceAvatar({ bot, onSendMessage }: VoiceAvatarProps) {
@@ -136,7 +331,7 @@ export function VoiceAvatar({ bot, onSendMessage }: VoiceAvatarProps) {
         />
 
         {/* Avatar Image */}
-        <div className="relative w-40 h-40 rounded-full overflow-hidden border-4 border-white shadow-xl flex items-center justify-center bg-gradient-to-br from-teal-100 to-blue-100">
+        <div className="relative w-40 h-40 rounded-full overflow-hidden border-4 border-white shadow-xl flex items-center justify-center bg-linear-to-br from-teal-100 to-blue-100">
           <img
             src="/avatar-ai.jpg"
             alt={`${bot?.title || 'AI'} Voice Assistant`}
@@ -255,121 +450,56 @@ export function VoiceAvatar({ bot, onSendMessage }: VoiceAvatarProps) {
               <span className="text-xl">{bot.icon_emoji || '✨'}</span>
               <h3 className="text-base font-bold text-gray-900">
                 {bot.bot_id === 'wellness' && 'Wellness Actions'}
-                {bot.bot_id === 'planner' && 'Today\'s Schedule'}
+                {bot.bot_id === 'planner' && "Today's Schedule"}
                 {bot.bot_id === 'speakup' && 'Support Resources'}
                 {bot.bot_id === 'upskill' && 'Career Growth'}
                 {bot.bot_id === 'finance' && 'Financial Tools'}
               </h3>
             </div>
             
-            {/* Quick Action Buttons */}
-            <div className="grid grid-cols-2 gap-2">
-              {bot.bot_id === 'wellness' && (
-                <>
-                  {getSessionsForBot(bot.bot_id).slice(0, 4).map((session, index) => (
-                    <button
-                      key={session.id}
-                      onClick={() => {
-                        setCurrentSession(session)
+            {/* Quick Action Cards */}
+            <div className="grid grid-cols-2 gap-3">
+              {bot.bot_id && agentCards[bot.bot_id as keyof typeof agentCards]?.map((card) => (
+                <button
+                  key={card.title}
+                  onClick={() => {
+                    // For wellness, try to match with guided sessions
+                    if (bot.bot_id === 'wellness') {
+                      const sessions = getSessionsForBot(bot.bot_id)
+                      const matchingSession = sessions.find(s => 
+                        s.title.toLowerCase().includes(card.title.toLowerCase().split(' ')[0])
+                      )
+                      if (matchingSession) {
+                        setCurrentSession(matchingSession)
                         setIsSessionModalOpen(true)
-                      }}
-                      className="flex items-center gap-2 px-3 py-2 text-left bg-teal-50 border border-teal-300 rounded-lg hover:bg-teal-100 hover:border-teal-400 hover:shadow-sm transition-all"
-                    >
-                      <div className="shrink-0 w-6 h-6 rounded-full bg-teal-200 flex items-center justify-center">
-                        <span className="text-xs font-bold text-teal-700">{index + 1}</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-gray-800 line-clamp-1">{session.title}</p>
-                        <p className="text-[10px] text-gray-600">{session.steps.length} steps</p>
-                      </div>
-                    </button>
-                  ))}
-                </>
-              )}
-              
-              {bot.bot_id === 'planner' && (
-                <>
-                  <button className="flex items-center gap-3 px-4 py-3 bg-blue-50 border-2 border-blue-300 rounded-xl hover:bg-blue-100 hover:shadow-md transition-all">
-                    <span className="text-2xl">📅</span>
-                    <div><p className="text-sm font-semibold">View Calendar</p><p className="text-xs text-gray-600">8 events today</p></div>
-                  </button>
-                  <button className="flex items-center gap-3 px-4 py-3 bg-purple-50 border-2 border-purple-300 rounded-xl hover:bg-purple-100 hover:shadow-md transition-all">
-                    <span className="text-2xl">✅</span>
-                    <div><p className="text-sm font-semibold">Task List</p><p className="text-xs text-gray-600">5 pending</p></div>
-                  </button>
-                  <button className="flex items-center gap-3 px-4 py-3 bg-indigo-50 border-2 border-indigo-300 rounded-xl hover:bg-indigo-100 hover:shadow-md transition-all">
-                    <span className="text-2xl">⏰</span>
-                    <div><p className="text-sm font-semibold">Time Blocks</p><p className="text-xs text-gray-600">Optimize day</p></div>
-                  </button>
-                  <button className="flex items-center gap-3 px-4 py-3 bg-cyan-50 border-2 border-cyan-300 rounded-xl hover:bg-cyan-100 hover:shadow-md transition-all">
-                    <span className="text-2xl">🎯</span>
-                    <div><p className="text-sm font-semibold">Set Goals</p><p className="text-xs text-gray-600">3 active</p></div>
-                  </button>
-                </>
-              )}
-              
-              {bot.bot_id === 'speakup' && (
-                <>
-                  <button className="flex items-center gap-3 px-4 py-3 bg-pink-50 border-2 border-pink-300 rounded-xl hover:bg-pink-100 hover:shadow-md transition-all">
-                    <span className="text-2xl">📞</span>
-                    <div><p className="text-sm font-semibold">Emergency Helpline</p><p className="text-xs text-gray-600">24/7 support</p></div>
-                  </button>
-                  <button className="flex items-center gap-3 px-4 py-3 bg-rose-50 border-2 border-rose-300 rounded-xl hover:bg-rose-100 hover:shadow-md transition-all">
-                    <span className="text-2xl">📝</span>
-                    <div><p className="text-sm font-semibold">Document Incident</p><p className="text-xs text-gray-600">Private & secure</p></div>
-                  </button>
-                  <button className="flex items-center gap-3 px-4 py-3 bg-purple-50 border-2 border-purple-300 rounded-xl hover:bg-purple-100 hover:shadow-md transition-all">
-                    <span className="text-2xl">⚖️</span>
-                    <div><p className="text-sm font-semibold">Legal Resources</p><p className="text-xs text-gray-600">Know your rights</p></div>
-                  </button>
-                  <button className="flex items-center gap-3 px-4 py-3 bg-blue-50 border-2 border-blue-300 rounded-xl hover:bg-blue-100 hover:shadow-md transition-all">
-                    <span className="text-2xl">🤝</span>
-                    <div><p className="text-sm font-semibold">Support Groups</p><p className="text-xs text-gray-600">Connect safely</p></div>
-                  </button>
-                </>
-              )}
-              
-              {bot.bot_id === 'upskill' && (
-                <>
-                  <button className="flex items-center gap-3 px-4 py-3 bg-violet-50 border-2 border-violet-300 rounded-xl hover:bg-violet-100 hover:shadow-md transition-all">
-                    <span className="text-2xl">🎓</span>
-                    <div><p className="text-sm font-semibold">Browse Courses</p><p className="text-xs text-gray-600">AI recommended</p></div>
-                  </button>
-                  <button className="flex items-center gap-3 px-4 py-3 bg-blue-50 border-2 border-blue-300 rounded-xl hover:bg-blue-100 hover:shadow-md transition-all">
-                    <span className="text-2xl">💼</span>
-                    <div><p className="text-sm font-semibold">Resume Builder</p><p className="text-xs text-gray-600">Get reviewed</p></div>
-                  </button>
-                  <button className="flex items-center gap-3 px-4 py-3 bg-cyan-50 border-2 border-cyan-300 rounded-xl hover:bg-cyan-100 hover:shadow-md transition-all">
-                    <span className="text-2xl">🎤</span>
-                    <div><p className="text-sm font-semibold">Interview Prep</p><p className="text-xs text-gray-600">Practice now</p></div>
-                  </button>
-                  <button className="flex items-center gap-3 px-4 py-3 bg-green-50 border-2 border-green-300 rounded-xl hover:bg-green-100 hover:shadow-md transition-all">
-                    <span className="text-2xl">📈</span>
-                    <div><p className="text-sm font-semibold">Skill Assessment</p><p className="text-xs text-gray-600">Find gaps</p></div>
-                  </button>
-                </>
-              )}
-              
-              {bot.bot_id === 'finance' && (
-                <>
-                  <button className="flex items-center gap-3 px-4 py-3 bg-emerald-50 border-2 border-emerald-300 rounded-xl hover:bg-emerald-100 hover:shadow-md transition-all">
-                    <span className="text-2xl">💰</span>
-                    <div><p className="text-sm font-semibold">Budget Tracker</p><p className="text-xs text-gray-600">₹28k remaining</p></div>
-                  </button>
-                  <button className="flex items-center gap-3 px-4 py-3 bg-green-50 border-2 border-green-300 rounded-xl hover:bg-green-100 hover:shadow-md transition-all">
-                    <span className="text-2xl">🎯</span>
-                    <div><p className="text-sm font-semibold">Savings Goals</p><p className="text-xs text-gray-600">72.5% complete</p></div>
-                  </button>
-                  <button className="flex items-center gap-3 px-4 py-3 bg-blue-50 border-2 border-blue-300 rounded-xl hover:bg-blue-100 hover:shadow-md transition-all">
-                    <span className="text-2xl">📈</span>
-                    <div><p className="text-sm font-semibold">Investment Tips</p><p className="text-xs text-gray-600">Learn basics</p></div>
-                  </button>
-                  <button className="flex items-center gap-3 px-4 py-3 bg-orange-50 border-2 border-orange-300 rounded-xl hover:bg-orange-100 hover:shadow-md transition-all">
-                    <span className="text-2xl">🪩</span>
-                    <div><p className="text-sm font-semibold">Tax Planning</p><p className="text-xs text-gray-600">Save money</p></div>
-                  </button>
-                </>
-              )}
+                        return
+                      }
+                    }
+                    // For other agents, trigger voice message
+                    if (onSendMessage) {
+                      onSendMessage(`I want to ${card.cta.toLowerCase()} for ${card.title}`)
+                    }
+                  }}
+                  className={cn(
+                    "flex flex-col gap-2 px-3 py-3 text-left rounded-xl border-2 hover:shadow-md transition-all",
+                    card.bgColor,
+                    card.borderColor,
+                    "hover:scale-[1.02]"
+                  )}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className={cn("text-[10px] font-bold uppercase tracking-wider", card.color)}>
+                      {card.type}
+                    </span>
+                    <div className="flex items-center gap-1 text-gray-500">
+                      <Clock className="w-3 h-3" />
+                      <span className="text-[10px] font-medium">{card.duration}</span>
+                    </div>
+                  </div>
+                  <p className="text-sm font-semibold text-gray-800 line-clamp-2">{card.title}</p>
+                  <span className={cn("text-xs font-medium", card.color)}>{card.cta}</span>
+                </button>
+              ))}
             </div>
           </div>
         </div>

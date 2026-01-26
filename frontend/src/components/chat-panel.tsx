@@ -213,7 +213,7 @@ export function ChatPanel({
       </div>
 
       {/* Input Area - Fixed at bottom */}
-      <div className="shrink-0 px-6 pb-6 pt-3 bg-gradient-to-t from-background/95 to-transparent">
+      <div className="shrink-0 px-6 pb-6 pt-3 bg-linear-to-t from-background/95 to-transparent">
         <form onSubmit={handleSubmit}>
         {selectedFile && (
           <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground bg-card px-3 py-2 rounded-lg border border-border">

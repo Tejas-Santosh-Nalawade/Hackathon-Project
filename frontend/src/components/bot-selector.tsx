@@ -152,7 +152,7 @@ export function BotSelector({
         </div>
       </nav>
 
-      {/* Today's Focus - Larger and More Prominent */}
+      {/* Today's Focus - Larger and More Prominent
       <div className="p-5 border-t border-sidebar-border flex-shrink-0">
         <div className="bg-gradient-to-br from-pink-50 to-purple-50 rounded-2xl p-5 shadow-sm">
           <h4 className="text-base font-bold text-sidebar-foreground mb-3">
@@ -166,7 +166,7 @@ export function BotSelector({
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
     </aside>
   )
 }
