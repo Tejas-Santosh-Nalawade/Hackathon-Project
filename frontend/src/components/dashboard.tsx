@@ -245,16 +245,16 @@ export function Dashboard({ onBotChange, selectedBotId: propSelectedBotId }: Das
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header */}
-        <header className="flex items-center justify-between px-4 lg:px-8 py-3 border-b border-border bg-card">
-          <div className="flex items-center gap-3 lg:hidden">
+        <header className="flex items-center justify-between px-2 sm:px-4 lg:px-8 py-2 sm:py-3 border-b border-border bg-card gap-2">
+          <div className="flex items-center gap-2 lg:hidden">
             {/* Mobile Menu Toggle */}
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="text-foreground"
+              className="text-foreground h-8 w-8 sm:h-10 sm:w-10"
             >
-              {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {isSidebarOpen ? <X className="w-4 h-4 sm:w-5 sm:h-5" /> : <Menu className="w-4 h-4 sm:w-5 sm:h-5" />}
             </Button>
           </div>
 
@@ -293,22 +293,22 @@ export function Dashboard({ onBotChange, selectedBotId: propSelectedBotId }: Das
           </div>
 
           {/* User Profile with Settings */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             {/* Notifications */}
-            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
-              <Bell className="w-5 h-5" />
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground h-8 w-8 sm:h-10 sm:w-10">
+              <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
             
             {/* User Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-3 hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary/30 rounded-full pr-2">
-                  <div className="w-10 h-10 rounded-full bg-[oklch(0.85_0.08_175)] flex items-center justify-center">
-                    <span className="text-sm font-medium text-[oklch(0.35_0.05_175)]">
+                <button className="flex items-center gap-1 sm:gap-2 md:gap-3 hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary/30 rounded-full pr-1 sm:pr-2">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[oklch(0.85_0.08_175)] flex items-center justify-center">
+                    <span className="text-xs sm:text-sm font-medium text-[oklch(0.35_0.05_175)]">
                       {userName.charAt(0)}
                     </span>
                   </div>
-                  <span className="hidden sm:block text-sm font-medium text-foreground">
+                  <span className="hidden md:block text-sm font-medium text-foreground">
                     {userName} S.
                   </span>
                 </button>

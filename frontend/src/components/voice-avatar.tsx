@@ -307,31 +307,31 @@ export function VoiceAvatar({ bot, onSendMessage }: VoiceAvatarProps) {
   }
 
   return (
-    <div className="flex flex-col items-center justify-start w-full h-full py-4 relative">
+    <div className="flex flex-col items-center justify-start w-full h-full py-2 md:py-4 px-2 md:px-4 relative overflow-y-auto">
       {/* Voice Enable/Disable Toggle - Top Right */}
       <button
         onClick={toggleVoice}
-        className="absolute top-2 right-2 w-10 h-10 rounded-full bg-white border-2 border-gray-200 shadow-md flex items-center justify-center hover:bg-gray-50 hover:border-[oklch(0.85_0.08_175)] transition-all duration-300 group z-10"
+        className="absolute top-1 right-1 md:top-2 md:right-2 w-8 h-8 md:w-10 md:h-10 rounded-full bg-white border-2 border-gray-200 shadow-md flex items-center justify-center hover:bg-gray-50 hover:border-[oklch(0.85_0.08_175)] transition-all duration-300 group z-10"
         title={voiceEnabled ? "Voice enabled - Click to disable" : "Voice disabled - Click to enable"}
       >
         {voiceEnabled ? (
-          <Volume2 className="w-5 h-5 text-[oklch(0.50_0.15_175)]" />
+          <Volume2 className="w-4 h-4 md:w-5 md:h-5 text-[oklch(0.50_0.15_175)]" />
         ) : (
-          <VolumeX className="w-5 h-5 text-gray-400" />
+          <VolumeX className="w-4 h-4 md:w-5 md:h-5 text-gray-400" />
         )}
       </button>
       
       {/* Avatar - Compact and Central */}
-      <div className="relative mb-3">
+      <div className="relative mb-2 md:mb-3">
         {/* Animated Glow */}
         <div
-          className={`absolute inset-0 bg-[oklch(0.85_0.08_175)] rounded-full blur-2xl transition-all duration-1000 ${
+          className={`absolute inset-0 bg-[oklch(0.85_0.08_175)] rounded-full blur-xl md:blur-2xl transition-all duration-1000 ${
             isListening || isSpeaking ? "opacity-70 scale-110 animate-pulse" : "opacity-40 scale-100"
           }`}
         />
 
         {/* Avatar Image */}
-        <div className="relative w-40 h-40 rounded-full overflow-hidden border-4 border-white shadow-xl flex items-center justify-center bg-linear-to-br from-teal-100 to-blue-100">
+        <div className="relative w-28 h-28 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-2 md:border-4 border-white shadow-xl flex items-center justify-center bg-linear-to-br from-teal-100 to-blue-100">
           <img
             src="/avatar-ai.jpg"
             alt={`${bot?.title || 'AI'} Voice Assistant`}
@@ -341,16 +341,16 @@ export function VoiceAvatar({ bot, onSendMessage }: VoiceAvatarProps) {
           {/* Voice Activity Indicator */}
           {isListening && (
             <div className="absolute inset-0 bg-red-500/20 backdrop-blur-[1px] flex items-center justify-center">
-              <div className="w-20 h-20 rounded-full bg-red-500 flex items-center justify-center animate-pulse">
-                <Mic className="w-10 h-10 text-white" />
+              <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full bg-red-500 flex items-center justify-center animate-pulse">
+                <Mic className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 text-white" />
               </div>
             </div>
           )}
 
           {isSpeaking && (
             <div className="absolute inset-0 bg-[oklch(0.85_0.08_175)]/30 backdrop-blur-[1px] flex items-center justify-center">
-              <div className="w-20 h-20 rounded-full bg-[oklch(0.50_0.15_175)] flex items-center justify-center animate-pulse">
-                <Volume2 className="w-10 h-10 text-white" />
+              <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full bg-[oklch(0.50_0.15_175)] flex items-center justify-center animate-pulse">
+                <Volume2 className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 text-white" />
               </div>
             </div>
           )}
@@ -358,38 +358,38 @@ export function VoiceAvatar({ bot, onSendMessage }: VoiceAvatarProps) {
       </div>
 
       {/* Status Text */}
-      <div className="text-center mb-3 min-h-16 max-w-xl px-4">
+      <div className="text-center mb-2 md:mb-3 min-h-12 md:min-h-16 max-w-xl px-2 md:px-4">
         {isListening && (
-          <div className="space-y-2">
-            <p className="text-lg font-medium text-red-600 animate-pulse">🎤 Listening...</p>
+          <div className="space-y-1 md:space-y-2">
+            <p className="text-base md:text-lg font-medium text-red-600 animate-pulse">🎤 Listening...</p>
             {transcript && (
-              <p className="text-sm text-muted-foreground italic">"{transcript}"</p>
+              <p className="text-xs md:text-sm text-muted-foreground italic">"{transcript}"</p>
             )}
           </div>
         )}
 
         {isSpeaking && (
-          <div className="space-y-2">
-            <p className="text-lg font-medium text-[oklch(0.50_0.15_175)] animate-pulse">
+          <div className="space-y-1 md:space-y-2">
+            <p className="text-base md:text-lg font-medium text-[oklch(0.50_0.15_175)] animate-pulse">
               {bot?.title || 'AI'} is speaking...
             </p>
             {response && (
-              <p className="text-sm text-foreground leading-relaxed">"{response}"</p>
+              <p className="text-xs md:text-sm text-foreground leading-relaxed">"{response}"</p>
             )}
           </div>
         )}
 
         {!isListening && !isSpeaking && response && (
-          <div className="space-y-2">
-            <p className="text-xs text-muted-foreground uppercase tracking-wide">Last Response:</p>
-            <p className="text-sm text-foreground leading-relaxed">"{response}"</p>
+          <div className="space-y-1 md:space-y-2">
+            <p className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wide">Last Response:</p>
+            <p className="text-xs md:text-sm text-foreground leading-relaxed">"{response}"</p>
           </div>
         )}
 
         {!isListening && !isSpeaking && !response && (
-          <div className="space-y-2">
-            <p className="text-xl font-medium text-foreground">Ready to help!</p>
-            <p className="text-sm text-muted-foreground">
+          <div className="space-y-1 md:space-y-2">
+            <p className="text-lg md:text-xl font-medium text-foreground">Ready to help!</p>
+            <p className="text-xs md:text-sm text-muted-foreground">
               Tap the microphone below and {bot?.bot_id === 'wellness' ? "tell me what's bothering you" : bot?.bot_id === 'finance' ? 'ask me about your finances' : bot?.bot_id === 'planner' ? 'tell me about your day' : bot?.bot_id === 'speakup' ? 'share what you need to talk about' : 'tell me what you need'}
             </p>
           </div>
@@ -397,13 +397,13 @@ export function VoiceAvatar({ bot, onSendMessage }: VoiceAvatarProps) {
       </div>
 
       {/* Voice Controls */}
-      <div className="flex gap-3 items-center mb-3">
+      <div className="flex gap-2 md:gap-3 items-center mb-2 md:mb-3">
         {/* Main Mic Button */}
         <Button
           size="lg"
           onClick={handleMicClick}
           disabled={isSpeaking || !voiceEnabled}
-          className={`w-16 h-16 rounded-full shadow-lg transition-all ${
+          className={`w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full shadow-lg transition-all ${
             isListening
               ? "bg-red-500 hover:bg-red-600 animate-pulse"
               : "bg-[oklch(0.50_0.15_175)] hover:bg-[oklch(0.45_0.15_175)]"
@@ -411,9 +411,9 @@ export function VoiceAvatar({ bot, onSendMessage }: VoiceAvatarProps) {
           title={isListening ? "Stop listening" : "Start speaking"}
         >
           {isListening ? (
-            <MicOff className="w-7 h-7 text-white" />
+            <MicOff className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white" />
           ) : (
-            <Mic className="w-7 h-7 text-white" />
+            <Mic className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white" />
           )}
         </Button>
 
@@ -423,17 +423,17 @@ export function VoiceAvatar({ bot, onSendMessage }: VoiceAvatarProps) {
             size="lg"
             variant="outline"
             onClick={handleStopSpeaking}
-            className="w-14 h-14 rounded-full border-2 hover:border-red-500 hover:text-red-500 transition-all"
+            className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full border-2 hover:border-red-500 hover:text-red-500 transition-all"
             title="Stop speaking"
           >
-            <VolumeX className="w-5 h-5" />
+            <VolumeX className="w-4 h-4 sm:w-4.5 sm:h-4.5 md:w-5 md:h-5" />
           </Button>
         )}
       </div>
 
       {/* Instructions */}
-      <div className="text-center max-w-md px-4 mb-3">
-        <p className="text-xs text-muted-foreground leading-relaxed">
+      <div className="text-center max-w-md px-2 md:px-4 mb-2 md:mb-3">
+        <p className="text-[10px] md:text-xs text-muted-foreground leading-relaxed">
           {isListening
             ? `Speak clearly. ${bot?.bot_id === 'wellness' ? 'Tell me about pain or stress.' : bot?.bot_id === 'finance' ? 'Ask about budgeting.' : bot?.bot_id === 'planner' ? 'Describe your tasks.' : bot?.bot_id === 'speakup' ? 'Share your concerns.' : 'Tell me what you need.'}`
             : `Tap the mic to speak OR type in the chat box below`
@@ -443,12 +443,12 @@ export function VoiceAvatar({ bot, onSendMessage }: VoiceAvatarProps) {
 
       {/* Agent-Specific Quick Actions */}
       {!isListening && !isSpeaking && bot && (
-        <div className="w-full max-w-2xl px-4">
-          <div className="bg-white rounded-xl border-2 border-teal-200 shadow-md p-4">
+        <div className="w-full max-w-2xl px-2 md:px-4">
+          <div className="bg-white rounded-lg md:rounded-xl border-2 border-teal-200 shadow-md p-3 md:p-4">
             {/* Header */}
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <span className="text-xl">{bot.icon_emoji || '✨'}</span>
-              <h3 className="text-base font-bold text-gray-900">
+            <div className="flex items-center justify-center gap-1 md:gap-2 mb-2 md:mb-3">
+              <span className="text-lg md:text-xl">{bot.icon_emoji || '✨'}</span>
+              <h3 className="text-sm md:text-base font-bold text-gray-900">
                 {bot.bot_id === 'wellness' && 'Wellness Actions'}
                 {bot.bot_id === 'planner' && "Today's Schedule"}
                 {bot.bot_id === 'speakup' && 'Support Resources'}
@@ -458,7 +458,7 @@ export function VoiceAvatar({ bot, onSendMessage }: VoiceAvatarProps) {
             </div>
             
             {/* Quick Action Cards */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2 md:gap-3">
               {bot.bot_id && agentCards[bot.bot_id as keyof typeof agentCards]?.map((card) => (
                 <button
                   key={card.title}
@@ -481,23 +481,23 @@ export function VoiceAvatar({ bot, onSendMessage }: VoiceAvatarProps) {
                     }
                   }}
                   className={cn(
-                    "flex flex-col gap-2 px-3 py-3 text-left rounded-xl border-2 hover:shadow-md transition-all",
+                    "flex flex-col gap-1 md:gap-2 px-2 py-2 md:px-3 md:py-3 text-left rounded-lg md:rounded-xl border-2 hover:shadow-md transition-all",
                     card.bgColor,
                     card.borderColor,
                     "hover:scale-[1.02]"
                   )}
                 >
                   <div className="flex items-center justify-between">
-                    <span className={cn("text-[10px] font-bold uppercase tracking-wider", card.color)}>
+                    <span className={cn("text-[8px] md:text-[10px] font-bold uppercase tracking-wider", card.color)}>
                       {card.type}
                     </span>
-                    <div className="flex items-center gap-1 text-gray-500">
-                      <Clock className="w-3 h-3" />
-                      <span className="text-[10px] font-medium">{card.duration}</span>
+                    <div className="flex items-center gap-0.5 md:gap-1 text-gray-500">
+                      <Clock className="w-2.5 h-2.5 md:w-3 md:h-3" />
+                      <span className="text-[8px] md:text-[10px] font-medium">{card.duration}</span>
                     </div>
                   </div>
-                  <p className="text-sm font-semibold text-gray-800 line-clamp-2">{card.title}</p>
-                  <span className={cn("text-xs font-medium", card.color)}>{card.cta}</span>
+                  <p className="text-xs md:text-sm font-semibold text-gray-800 line-clamp-2">{card.title}</p>
+                  <span className={cn("text-[10px] md:text-xs font-medium", card.color)}>{card.cta}</span>
                 </button>
               ))}
             </div>

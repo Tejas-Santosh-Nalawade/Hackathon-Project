@@ -217,9 +217,9 @@ export function PersonalizedDashboard({ botId = "wellness", onBotChange }: Perso
       <div className="p-6 space-y-6">
       
       {/* Agent Selector */}
-      <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-4 border-2 border-purple-200 shadow-md">
-        <h2 className="text-sm font-semibold text-purple-900 mb-3">MY SUPPORT TEAM</h2>
-        <div className="grid grid-cols-5 gap-3">
+      <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-3 md:p-4 border-2 border-purple-200 shadow-md">
+        <h2 className="text-xs md:text-sm font-semibold text-purple-900 mb-2 md:mb-3">MY SUPPORT TEAM</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 md:gap-3">
           {[
             { id: "wellness", name: "FitHer", emoji: "💪", desc: "Wellness & fitness" },
             { id: "planner", name: "PlanPal", emoji: "📅", desc: "Master your time" },
@@ -230,31 +230,31 @@ export function PersonalizedDashboard({ botId = "wellness", onBotChange }: Perso
             <button
               key={agent.id}
               onClick={() => handleBotClick(agent.id)}
-              className={`p-3 rounded-xl text-left transition-all ${
+              className={`p-2 md:p-3 rounded-xl text-left transition-all ${
                 botId === agent.id
                   ? "bg-pink-100 border-2 border-pink-400 shadow-lg scale-105"
                   : "bg-white border border-gray-200 hover:border-purple-300 hover:shadow-md"
               }`}
             >
-              <div className="text-2xl mb-1">{agent.emoji}</div>
-              <p className="font-semibold text-sm text-gray-900">{agent.name}</p>
-              <p className="text-xs text-gray-600 line-clamp-1">{agent.desc}</p>
+              <div className="text-xl md:text-2xl mb-1">{agent.emoji}</div>
+              <p className="font-semibold text-xs md:text-sm text-gray-900">{agent.name}</p>
+              <p className="text-[10px] md:text-xs text-gray-600 line-clamp-1">{agent.desc}</p>
             </button>
           ))}
         </div>
       </div>
       
       {/* Welcome Header with Avatar Greeting */}
-      <div className="flex items-start justify-between bg-gradient-to-r from-pink-100 via-purple-100 to-rose-100 p-6 rounded-3xl border-2 border-pink-200 shadow-lg">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-600 via-purple-600 to-rose-600 bg-clip-text text-transparent mb-2">
+      <div className="flex flex-col md:flex-row items-start justify-between bg-gradient-to-r from-pink-100 via-purple-100 to-rose-100 p-4 md:p-6 rounded-2xl md:rounded-3xl border-2 border-pink-200 shadow-lg gap-4">
+        <div className="flex-1">
+          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-pink-600 via-purple-600 to-rose-600 bg-clip-text text-transparent mb-2">
             {botId === "wellness" && "Good afternoon, " + userName + "! 💝"}
             {botId === "planner" && "Welcome back, " + userName + "! 📅"}
             {botId === "speakup" && "You're safe here, " + userName + " 🛡️"}
             {botId === "upskill" && "Ready to grow, " + userName + "! 🚀"}
             {botId === "finance" && "Let's build wealth, " + userName + "! 💰"}
           </h1>
-          <p className="text-lg text-gray-700">
+          <p className="text-sm md:text-base lg:text-lg text-gray-700">
             {botId === "wellness" && (
               <>
                 You have <span className="font-semibold text-pink-600">3 wellness sessions</span> and{" "}
@@ -290,7 +290,7 @@ export function PersonalizedDashboard({ botId = "wellness", onBotChange }: Perso
         </div>
         <Button 
           onClick={handleStartBot}
-          className="bg-gradient-to-r from-pink-500 via-purple-500 to-rose-500 hover:from-pink-600 hover:via-purple-600 hover:to-rose-600 text-white shadow-lg"
+          className="bg-gradient-to-r from-pink-500 via-purple-500 to-rose-500 hover:from-pink-600 hover:via-purple-600 hover:to-rose-600 text-white shadow-lg w-full md:w-auto whitespace-nowrap"
         >
           <Sparkles className="w-4 h-4 mr-2" />
           {botId === "wellness" && "Start Wellness"}
@@ -302,8 +302,8 @@ export function PersonalizedDashboard({ botId = "wellness", onBotChange }: Perso
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-5 border-2 border-pink-200 bg-gradient-to-br from-pink-50 via-rose-50 to-white shadow-md hover:shadow-lg transition-all">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        <Card className="p-4 md:p-5 border-2 border-pink-200 bg-gradient-to-br from-pink-50 via-rose-50 to-white shadow-md hover:shadow-lg transition-all">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Wellness Score</p>
@@ -357,37 +357,45 @@ export function PersonalizedDashboard({ botId = "wellness", onBotChange }: Perso
       </div>
 
       {/* Main Content Tabs */}
-      <Tabs defaultValue="calendar" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="calendar">
-            <Calendar className="w-4 h-4 mr-2" />
-            Calendar
+      <Tabs defaultValue="calendar" className="space-y-4 md:space-y-6">
+        <div className="overflow-x-auto pb-1">
+        <TabsList className="inline-flex w-auto min-w-full md:grid md:w-full md:grid-cols-6 h-auto md:h-10 p-1 gap-1">
+          <TabsTrigger value="calendar" className="flex-shrink-0 px-2 md:px-4 text-xs md:text-sm h-9 md:h-auto">
+            <Calendar className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+            <span className="hidden sm:inline">Calendar</span>
+            <span className="sm:hidden">Cal</span>
           </TabsTrigger>
-          <TabsTrigger value="family">
-            <Heart className="w-4 h-4 mr-2" />
-            Family Care
+          <TabsTrigger value="family" className="flex-shrink-0 px-2 md:px-4 text-xs md:text-sm h-9 md:h-auto">
+            <Heart className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+            <span className="hidden sm:inline">Family Care</span>
+            <span className="sm:hidden">Family</span>
           </TabsTrigger>
-          <TabsTrigger value="courses">
-            <BookOpen className="w-4 h-4 mr-2" />
-            Courses
+          <TabsTrigger value="courses" className="flex-shrink-0 px-2 md:px-4 text-xs md:text-sm h-9 md:h-auto">
+            <BookOpen className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+            <span className="hidden sm:inline">Courses</span>
+            <span className="sm:hidden">Learn</span>
           </TabsTrigger>
-          <TabsTrigger value="finance">
-            <DollarSign className="w-4 h-4 mr-2" />
-            Finance
+          <TabsTrigger value="finance" className="flex-shrink-0 px-2 md:px-4 text-xs md:text-sm h-9 md:h-auto">
+            <DollarSign className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+            <span className="hidden sm:inline">Finance</span>
+            <span className="sm:hidden">Money</span>
           </TabsTrigger>
-          <TabsTrigger value="schedule">
-            <Clock className="w-4 h-4 mr-2" />
-            Schedule
+          <TabsTrigger value="schedule" className="flex-shrink-0 px-2 md:px-4 text-xs md:text-sm h-9 md:h-auto">
+            <Clock className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+            <span className="hidden sm:inline">Schedule</span>
+            <span className="sm:hidden">Time</span>
           </TabsTrigger>
-          <TabsTrigger value="analytics">
-            <BarChart3 className="w-4 h-4 mr-2" />
-            My Stats
+          <TabsTrigger value="analytics" className="flex-shrink-0 px-2 md:px-4 text-xs md:text-sm h-9 md:h-auto">
+            <BarChart3 className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+            <span className="hidden sm:inline">My Stats</span>
+            <span className="sm:hidden">Stats</span>
           </TabsTrigger>
         </TabsList>
+        </div>
 
         {/* Calendar & Events Tab */}
-        <TabsContent value="calendar" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <TabsContent value="calendar" className="space-y-4 md:space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
             <Card className="lg:col-span-2 p-6">
               <h2 className="text-2xl font-bold mb-4">Today's Schedule</h2>
               <div className="space-y-3">

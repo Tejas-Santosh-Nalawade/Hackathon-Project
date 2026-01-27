@@ -228,29 +228,29 @@ export function MainContent({
   return (
     <main className="flex-1 flex flex-col h-full overflow-y-auto">
       {/* Main Content: Scrollable split view */}
-      <div className="flex-1 flex gap-4 p-4 min-h-0">
+      <div className="flex-1 flex flex-col lg:flex-row gap-2 md:gap-4 p-2 md:p-4 min-h-0">
         {/* Left Side: Voice Avatar - Fixed, Scrollable */}
-        <div className="w-[45%] flex flex-col bg-linear-to-br from-teal-50 via-blue-50 to-purple-50 rounded-2xl shadow-md border border-teal-100 overflow-hidden">
-          <div className="flex-1 overflow-y-auto p-4" style={{ scrollbarWidth: 'thin', scrollbarColor: '#14b8a6 #ccfbf1' }}>
+        <div className="w-full lg:w-[45%] flex flex-col bg-linear-to-br from-teal-50 via-blue-50 to-purple-50 rounded-xl md:rounded-2xl shadow-md border border-teal-100 overflow-hidden min-h-[300px] lg:min-h-0">
+          <div className="flex-1 overflow-y-auto p-2 md:p-4" style={{ scrollbarWidth: 'thin', scrollbarColor: '#14b8a6 #ccfbf1' }}>
             <VoiceAvatar bot={bot} onSendMessage={onSendMessage} />
           </div>
         </div>
 
         {/* Right Side: Chat Panel - Fixed, Scrollable */}
-        <div className="w-[55%] flex flex-col overflow-hidden">
+        <div className="w-full lg:w-[55%] flex flex-col overflow-hidden min-h-[400px] lg:min-h-0">
           {messages.length > 0 && (
-            <div className="flex items-center justify-between mb-2 shrink-0">
-              <h3 className="text-xs font-medium text-muted-foreground">
+            <div className="flex items-center justify-between mb-1 md:mb-2 shrink-0">
+              <h3 className="text-[10px] md:text-xs font-medium text-muted-foreground">
                 Conversation with {bot?.title}
               </h3>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={onClearChat}
-                className="text-muted-foreground hover:text-destructive h-7 text-xs"
+                className="text-muted-foreground hover:text-destructive h-6 md:h-7 text-[10px] md:text-xs"
               >
                 <Trash2 className="w-3 h-3 mr-1" />
-                Clear
+                <span className="hidden sm:inline">Clear</span>
               </Button>
             </div>
           )}

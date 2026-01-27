@@ -37,7 +37,7 @@ export function AvatarPanel({ bot, lastMessage, onQuickAction }: AvatarPanelProp
   ] : []
 
   return (
-    <aside className="hidden lg:flex flex-col items-center w-80 xl:w-96 p-6 relative h-full">
+    <aside className="hidden lg:flex flex-col items-center w-80 xl:w-96 p-4 lg:p-6 relative h-full">
       {/* Speech Bubble */}
       <div className="absolute top-8 left-4 right-4 z-10">
         <div className="bg-card border border-border rounded-2xl p-4 shadow-lg relative">

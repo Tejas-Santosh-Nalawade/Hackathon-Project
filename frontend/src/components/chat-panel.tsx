@@ -136,24 +136,24 @@ export function ChatPanel({
     : "Type a message..."
 
   return (
-    <div className="h-full relative bg-muted/30 rounded-3xl border-2 border-border shadow-lg flex flex-col overflow-hidden">
+    <div className="h-full relative bg-muted/30 rounded-2xl md:rounded-3xl border-2 border-border shadow-lg flex flex-col overflow-hidden">
       {/* Private Mode Indicator - Moved to top-left */}
-      <div className="absolute top-2 left-4 flex items-center gap-1.5 bg-muted/50 px-2 py-1 rounded-full text-muted-foreground z-10 backdrop-blur-sm">
-        <Lock className="w-3 h-3" />
-        <span className="text-[10px] font-medium uppercase tracking-wide">Private</span>
+      <div className="absolute top-1 left-2 md:top-2 md:left-4 flex items-center gap-1 md:gap-1.5 bg-muted/50 px-1.5 md:px-2 py-0.5 md:py-1 rounded-full text-muted-foreground z-10 backdrop-blur-sm">
+        <Lock className="w-2.5 h-2.5 md:w-3 md:h-3" />
+        <span className="text-[8px] md:text-[10px] font-medium uppercase tracking-wide">Private</span>
       </div>
       
       {/* Chat Messages Area - Scrollable with fixed height */}
       <div 
         ref={chatContainerRef}
-        className="flex-1 overflow-y-auto px-6 pt-12 pb-4 space-y-4 scroll-smooth"
+        className="flex-1 overflow-y-auto px-2 md:px-4 lg:px-6 pt-8 md:pt-12 pb-2 md:pb-4 space-y-2 md:space-y-4 scroll-smooth"
         style={{ scrollbarWidth: 'thin', scrollbarColor: '#ec4899 #fce7f3' }}
       >
         {/* Show messages or default greeting */}
         {messages.length === 0 ? (
           <div className="flex">
-            <div className="max-w-md bg-card rounded-2xl px-5 py-4 shadow-sm border border-border">
-              <p className="text-sm text-card-foreground leading-relaxed">
+            <div className="max-w-md bg-card rounded-xl md:rounded-2xl px-3 py-2 md:px-5 md:py-4 shadow-sm border border-border">
+              <p className="text-xs md:text-sm text-card-foreground leading-relaxed">
                 {defaultGreeting}
               </p>
             </div>
@@ -163,14 +163,14 @@ export function ChatPanel({
             <div key={`${message.role}-${index}`}>
               {message.role === "user" ? (
                 <div className="flex justify-end">
-                  <div className="max-w-[70%] bg-primary text-primary-foreground rounded-2xl rounded-tr-sm px-5 py-3">
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  <div className="max-w-[80%] md:max-w-[70%] bg-primary text-primary-foreground rounded-2xl rounded-tr-sm px-3 py-2 md:px-5 md:py-3">
+                    <p className="text-xs md:text-sm whitespace-pre-wrap">{message.content}</p>
                   </div>
                 </div>
               ) : (
                 <div className="flex">
-                  <div className="max-w-md bg-card rounded-2xl px-5 py-4 shadow-sm border border-border">
-                    <p className="text-sm text-card-foreground whitespace-pre-wrap leading-relaxed">
+                  <div className="max-w-[90%] md:max-w-md bg-card rounded-xl md:rounded-2xl px-3 py-2 md:px-5 md:py-4 shadow-sm border border-border">
+                    <p className="text-xs md:text-sm text-card-foreground whitespace-pre-wrap leading-relaxed">
                       {message.content}
                     </p>
                   </div>
@@ -182,8 +182,8 @@ export function ChatPanel({
                 index === messages.length - 1 &&
                 searchResults &&
                 searchResults.length > 0 && (
-                  <div className="mt-3 ml-2">
-                    <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">
+                  <div className="mt-2 md:mt-3 ml-1 md:ml-2">
+                    <p className="text-[10px] md:text-xs font-medium text-muted-foreground mb-1 md:mb-2 uppercase tracking-wider">
                       Resources found
                     </p>
                     <div className="grid gap-2 max-w-md">
@@ -200,10 +200,10 @@ export function ChatPanel({
         {/* Loading State */}
         {isLoading && (
           <div className="flex">
-            <div className="bg-card rounded-2xl px-5 py-4 shadow-sm border border-border">
+            <div className="bg-card rounded-xl md:rounded-2xl px-3 py-2 md:px-5 md:py-4 shadow-sm border border-border">
               <div className="flex items-center gap-2 text-muted-foreground">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-sm">Thinking...</span>
+                <Loader2 className="w-3 h-3 md:w-4 md:h-4 animate-spin" />
+                <span className="text-xs md:text-sm">Thinking...</span>
               </div>
             </div>
           </div>
@@ -213,11 +213,11 @@ export function ChatPanel({
       </div>
 
       {/* Input Area - Fixed at bottom */}
-      <div className="shrink-0 px-6 pb-6 pt-3 bg-linear-to-t from-background/95 to-transparent">
+      <div className="shrink-0 px-2 md:px-4 lg:px-6 pb-2 md:pb-4 lg:pb-6 pt-2 md:pt-3 bg-linear-to-t from-background/95 to-transparent">
         <form onSubmit={handleSubmit}>
         {selectedFile && (
-          <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground bg-card px-3 py-2 rounded-lg border border-border">
-            <Paperclip className="w-3 h-3" />
+          <div className="mb-1 md:mb-2 flex items-center gap-1 md:gap-2 text-[10px] md:text-xs text-muted-foreground bg-card px-2 md:px-3 py-1 md:py-2 rounded-lg border border-border">
+            <Paperclip className="w-2.5 h-2.5 md:w-3 md:h-3" />
             <span>{selectedFile.name}</span>
             <button
               type="button"
@@ -237,9 +237,9 @@ export function ChatPanel({
             placeholder={placeholderText}
             disabled={!bot || isLoading}
             className={cn(
-              "w-full pl-5 pr-24 py-4 rounded-2xl",
+              "w-full pl-3 md:pl-5 pr-16 md:pr-24 py-2.5 md:py-4 rounded-xl md:rounded-2xl",
               "bg-card border-2 border-border shadow-sm",
-              "text-foreground placeholder:text-muted-foreground text-sm",
+              "text-foreground placeholder:text-muted-foreground text-xs md:text-sm",
               "focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40",
               "disabled:opacity-50 disabled:cursor-not-allowed",
               "transition-all duration-200"
@@ -252,25 +252,25 @@ export function ChatPanel({
             className="hidden"
             accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
           />
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
+          <div className="absolute right-1 md:right-2 top-1/2 -translate-y-1/2 flex gap-0.5 md:gap-1">
             <Button
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={!bot || isLoading}
               size="icon"
               variant="ghost"
-              className="h-10 w-10 rounded-xl hover:bg-accent hover:scale-110 active:scale-95 transition-all"
+              className="h-8 w-8 md:h-10 md:w-10 rounded-lg md:rounded-xl hover:bg-accent hover:scale-110 active:scale-95 transition-all"
             >
-              <Paperclip className="w-4 h-4" />
+              <Paperclip className="w-3 h-3 md:w-4 md:h-4" />
               <span className="sr-only">Attach file</span>
             </Button>
             <Button
               type="submit"
               disabled={!bot || !input.trim() || isLoading}
               size="icon"
-              className="h-10 w-10 rounded-xl hover:scale-110 active:scale-95 transition-transform shadow-md"
+              className="h-8 w-8 md:h-10 md:w-10 rounded-lg md:rounded-xl hover:scale-110 active:scale-95 transition-transform shadow-md"
             >
-              <Send className="w-4 h-4" />
+              <Send className="w-3 h-3 md:w-4 md:h-4" />
               <span className="sr-only">Send message</span>
             </Button>
           </div>
