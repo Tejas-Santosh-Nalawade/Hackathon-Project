@@ -1,19 +1,19 @@
 import { useEffect, useState } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { Dashboard } from "@/components/dashboard"
+import { isAuthenticated, getUserProfile } from "@/lib/api"
 
 export default function Home() {
   const navigate = useNavigate()
   const location = useLocation()
   const [selectedBotId, setSelectedBotId] = useState<string>("wellness")
 
-  useEffect(() =>{
-    // Check if user is authenticated
-    const user = typeof window !== "undefined" ? localStorage.getItem("user") : null
-    
-    if (!user) {
+  useEffect(() => {
+    // Check if user is authenticated with JWT
+    if (!isAuthenticated()) {
       // Redirect to auth page if not logged in
       navigate("/auth")
+      return
     }
     
     // Set bot from navigation state if provided
@@ -23,11 +23,11 @@ export default function Home() {
   }, [navigate, location.state])
 
   // Show dashboard only if authenticated
-  const user = typeof window !== "undefined" ? localStorage.getItem("user") : null
-
-  if (!user) {
+  if (!isAuthenticated()) {
     return null // Will redirect via useEffect
   }
+
+  const user = getUserProfile()
 
   return (
     <div className="h-screen flex flex-col bg-background">

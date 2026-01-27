@@ -5,6 +5,9 @@ import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Mail, Lock, Eye, EyeOff, Loader2, Heart } from "lucide-react"
+import { register, login, socialAuth, type RegisterData, type LoginCredentials } from "@/lib/api"
+import { useToast } from "@/hooks/use-toast"
+import { GoogleLogin, type CredentialResponse } from '@react-oauth/google'
 
 export function AuthForm() {
   const [isSignUp, setIsSignUp] = useState(false)
@@ -17,6 +20,7 @@ export function AuthForm() {
   })
   const [error, setError] = useState("")
   const navigate = useNavigate()
+  const { toast } = useToast()
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -30,34 +34,107 @@ export function AuthForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setError("")
 
-    // Simulate auth - in production, connect to backend
-    setTimeout(() => {
-      if (formData.email && formData.password) {
-        // Store user data in localStorage (for demo)
-        localStorage.setItem("user", JSON.stringify({
-          name: isSignUp ? formData.name : formData.email.split("@")[0],
+    try {
+      if (isSignUp) {
+        // Register new user
+        if (!formData.name || !formData.email || !formData.password) {
+          setError("Please fill in all fields")
+          setIsLoading(false)
+          return
+        }
+
+        const registerData: RegisterData = {
           email: formData.email,
-        }))
+          password: formData.password,
+          name: formData.name,
+        }
+
+        await register(registerData)
+        
+        toast({
+          title: "Welcome to HerSpace! 💜",
+          description: `Account created successfully for ${formData.name}`,
+        })
+        
         navigate("/")
       } else {
-        setError("Please fill in all fields")
+        // Login existing user
+        if (!formData.email || !formData.password) {
+          setError("Please enter email and password")
+          setIsLoading(false)
+          return
+        }
+
+        const credentials: LoginCredentials = {
+          email: formData.email,
+          password: formData.password,
+        }
+
+        await login(credentials)
+        
+        toast({
+          title: "Welcome back! 💜",
+          description: "You're logged in successfully",
+        })
+        
+        navigate("/")
       }
+    } catch (err: any) {
+      setError(err.message || "Authentication failed. Please try again.")
+      toast({
+        title: "Authentication Error",
+        description: err.message || "Something went wrong",
+        variant: "destructive",
+      })
+    } finally {
       setIsLoading(false)
-    }, 800)
+    }
   }
 
-  const handleSocialAuth = (provider: string) => {
-    // Simulate social auth
+  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
+    if (!credentialResponse.credential) {
+      toast({
+        title: "Google Sign-In Failed",
+        description: "No credential received",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsLoading(true)
-    setTimeout(() => {
-      localStorage.setItem("user", JSON.stringify({
-        name: "Priya S.",
-        email: "priya@example.com",
-        provider: provider,
-      }))
+    setError("")
+
+    try {
+      await socialAuth({
+        id_token: credentialResponse.credential,
+      })
+      
+      toast({
+        title: "Welcome! 💜",
+        description: "Signed in with Google successfully",
+      })
+      
       navigate("/")
-    }, 800)
+    } catch (err: any) {
+      setError(err.message || "Google authentication failed")
+      toast({
+        title: "Authentication Error",
+        description: err.message || "Google sign-in failed",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleGoogleError = () => {
+    toast({
+      title: "Google Sign-In Failed",
+      description: "Please try again or use email/password",
+      variant: "destructive",
+    })
   }
 
   return (
@@ -187,42 +264,16 @@ export function AuthForm() {
           <div className="h-px bg-border flex-1" />
         </div>
 
-        {/* Social Auth */}
-        <div className="space-y-3">
-          <button
-            type="button"
-            onClick={() => handleSocialAuth("google")}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-border bg-card hover:bg-accent transition-colors text-foreground"
-            disabled={isLoading}
-          >
-            <svg
-              className="w-4 h-4"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-            </svg>
-            Google
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleSocialAuth("apple")}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-border bg-card hover:bg-accent transition-colors text-foreground"
-            disabled={isLoading}
-          >
-            <svg
-              className="w-4 h-4"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <path d="M17.05 13.5c-.91 0-1.82.55-2.25 1.51.93.64 1.54 1.76 1.54 3.02 0 2.05-1.53 3.76-3.75 3.76-1.35 0-2.59-.7-3.3-1.81-.29-.47-.5-1-.58-1.54-.15-1.02.15-2.19.91-3.06 1.06-1.2 3-1.98 5.13-1.98 1.65 0 3.14.54 4.3 1.55-.56-.87-1.46-1.45-2.7-1.45zM6.5 13c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
-            </svg>
-            Apple
-          </button>
+        {/* Google OAuth */}
+        <div className="flex justify-center">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            theme="outline"
+            size="large"
+            text={isSignUp ? "signup_with" : "signin_with"}
+            width="384"
+          />
         </div>
 
         {/* Toggle signup/login */}

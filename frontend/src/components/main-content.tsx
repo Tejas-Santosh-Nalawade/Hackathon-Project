@@ -1,12 +1,15 @@
 "use client"
 
-import React from "react"
+import React, { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import type { Bot, ChatMessage, SearchResult } from "@/lib/types"
-import { Trash2, Clock, Sparkles, Check } from "lucide-react"
+import { Trash2, Clock, Sparkles, Check, BarChart3, MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ChatPanel } from "./chat-panel"
 import { VoiceAvatar } from "./voice-avatar"
+import { AgenticDashboard } from "./agentic-dashboard"
+import { PersonalizedDashboard } from "./personalized-dashboard"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface MainContentProps {
   bot: Bot | null
@@ -201,6 +204,8 @@ export function MainContent({
   isLoading,
   userName,
 }: MainContentProps) {
+  const [activeTab, setActiveTab] = useState<"chat" | "dashboard" | "features">("chat")
+  
   // Get last assistant message for avatar
   const lastAssistantMessage = messages
     .filter((m) => m.role === "assistant")
@@ -226,45 +231,77 @@ export function MainContent({
   }, [])
 
   return (
-    <main className="flex-1 flex flex-col h-full overflow-y-auto">
-      {/* Main Content: Scrollable split view */}
-      <div className="flex-1 flex flex-col lg:flex-row gap-2 md:gap-4 p-2 md:p-4 min-h-0">
-        {/* Left Side: Voice Avatar - Fixed, Scrollable */}
-        <div className="w-full lg:w-[45%] flex flex-col bg-linear-to-br from-teal-50 via-blue-50 to-purple-50 rounded-xl md:rounded-2xl shadow-md border border-teal-100 overflow-hidden min-h-[300px] lg:min-h-0">
-          <div className="flex-1 overflow-y-auto p-2 md:p-4" style={{ scrollbarWidth: 'thin', scrollbarColor: '#14b8a6 #ccfbf1' }}>
-            <VoiceAvatar bot={bot} onSendMessage={onSendMessage} />
-          </div>
-        </div>
+    <main className="flex-1 flex flex-col h-full overflow-hidden">
+      {/* Tab Switcher */}
+      <div className="shrink-0 border-b px-4 py-2">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "chat" | "dashboard" | "features")}>
+          <TabsList className="grid w-full max-w-2xl grid-cols-3">
+            <TabsTrigger value="chat" className="flex items-center gap-2">
+              <MessageSquare className="w-4 h-4" />
+              Chat
+            </TabsTrigger>
+            <TabsTrigger value="dashboard" className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Analytics
+            </TabsTrigger>
+            <TabsTrigger value="features" className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4" />
+              Dashboard
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
 
-        {/* Right Side: Chat Panel - Fixed, Scrollable */}
-        <div className="w-full lg:w-[55%] flex flex-col overflow-hidden min-h-[400px] lg:min-h-0">
-          {messages.length > 0 && (
-            <div className="flex items-center justify-between mb-1 md:mb-2 shrink-0">
-              <h3 className="text-[10px] md:text-xs font-medium text-muted-foreground">
-                Conversation with {bot?.title}
-              </h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClearChat}
-                className="text-muted-foreground hover:text-destructive h-6 md:h-7 text-[10px] md:text-xs"
-              >
-                <Trash2 className="w-3 h-3 mr-1" />
-                <span className="hidden sm:inline">Clear</span>
-              </Button>
+      {/* Content Area */}
+      <div className="flex-1 overflow-y-auto">
+        {activeTab === "chat" ? (
+          <div className="flex flex-col lg:flex-row gap-2 md:gap-4 p-2 md:p-4 h-full">
+            {/* Left Side: Voice Avatar */}
+            <div className="w-full lg:w-[45%] flex flex-col bg-gradient-to-br from-teal-50 via-blue-50 to-purple-50 rounded-xl md:rounded-2xl shadow-md border border-teal-100 overflow-hidden min-h-[300px] lg:min-h-0">
+              <div className="flex-1 overflow-y-auto p-2 md:p-4" style={{ scrollbarWidth: 'thin', scrollbarColor: '#14b8a6 #ccfbf1' }}>
+                <VoiceAvatar bot={bot} onSendMessage={onSendMessage} />
+              </div>
             </div>
-          )}
-          
-          <div className="flex-1 min-h-0">
-            <ChatPanel
-              bot={bot}
-              messages={messages}
-              searchResults={searchResults}
-              onSendMessage={onSendMessage}
-              isLoading={isLoading}
-            />
+
+            {/* Right Side: Chat Panel */}
+            <div className="w-full lg:w-[55%] flex flex-col overflow-hidden min-h-[400px] lg:min-h-0">
+              {messages.length > 0 && (
+                <div className="flex items-center justify-between mb-1 md:mb-2 shrink-0">
+                  <h3 className="text-[10px] md:text-xs font-medium text-muted-foreground">
+                    Conversation with {bot?.title}
+                  </h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onClearChat}
+                    className="text-muted-foreground hover:text-destructive h-6 md:h-7 text-[10px] md:text-xs"
+                  >
+                    <Trash2 className="w-3 h-3 mr-1" />
+                    <span className="hidden sm:inline">Clear</span>
+                  </Button>
+                </div>
+              )}
+              
+              <div className="flex-1 min-h-0">
+                <ChatPanel
+                  bot={bot}
+                  messages={messages}
+                  searchResults={searchResults}
+                  onSendMessage={onSendMessage}
+                  isLoading={isLoading}
+                />
+              </div>
+            </div>
           </div>
-        </div>
+        ) : activeTab === "dashboard" ? (
+          <div className="p-4">
+            <AgenticDashboard />
+          </div>
+        ) : (
+          <div className="p-4">
+            <PersonalizedDashboard />
+          </div>
+        )}
       </div>
     </main>
   )
