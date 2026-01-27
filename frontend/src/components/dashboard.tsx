@@ -9,9 +9,12 @@ import type { Bot, ChatMessage, SearchResult } from "@/lib/types"
 import {
   fetchBots,
   sendChatMessage,
+  chatWithAgent,
   saveChatHistory,
   loadChatHistory,
   clearChatHistory,
+  getUserProfile,
+  logout,
 } from "@/lib/api"
 import { toast } from "sonner"
 import { Menu, X, Search, Settings, LogOut, User, Bell, BarChart3 } from "lucide-react"
@@ -24,6 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 
 // Fallback bots for offline mode (used when backend is unavailable)
@@ -75,25 +79,32 @@ export function Dashboard({ onBotChange, selectedBotId: propSelectedBotId }: Das
   const [searchResults, setSearchResults] = useState<SearchResult[] | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const [userName, setUserName] = useState("Priya")
   const [bots, setBots] = useState<Bot[]>(fallbackBots)
   const [isLoadingBots, setIsLoadingBots] = useState(true)
   const [isBackendConnected, setIsBackendConnected] = useState(false)
 
-  // Load user name from localStorage on mount
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const user = localStorage.getItem("user")
-      if (user) {
-        try {
-          const userData = JSON.parse(user)
-          setUserName(userData.name || "Priya")
-        } catch (e) {
-          console.error("[v0] Failed to parse user data:", e)
-        }
-      }
+  // Load user profile from JWT
+  const userProfile = getUserProfile()
+  const userName = userProfile?.name || "User"
+  const userEmail = userProfile?.email || ""
+  const userInitials = userName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2)
+
+  // Logout handler
+  const handleLogout = async () => {
+    try {
+      await logout()
+      toast.success("Logged out successfully")
+      navigate("/auth")
+    } catch (error) {
+      console.error("Logout error:", error)
+      navigate("/auth")
     }
-  }, [])
+  }
 
   // Fetch bots from backend API on mount
   useEffect(() => {
@@ -118,11 +129,6 @@ export function Dashboard({ onBotChange, selectedBotId: propSelectedBotId }: Das
     }
     loadBots()
   }, [])
-
-  const handleLogout = useCallback(() => {
-    localStorage.removeItem("user")
-    navigate("/auth")
-  }, [navigate])
 
   const selectedBot = bots?.find((bot) => bot.bot_id === selectedBotId) || null
 
@@ -167,17 +173,35 @@ export function Dashboard({ onBotChange, selectedBotId: propSelectedBotId }: Das
       setSearchResults(null)
 
       try {
-        const response = await sendChatMessage(botIdAtSend, message, trimmedHistory)
-        const assistantMessage: ChatMessage = {
-          role: "assistant",
-          content: response.reply,
+        // Try v2 agent API first (memory-enabled)
+        let response
+        let assistantMessage: ChatMessage
+        
+        try {
+          const agentResponse = await chatWithAgent(botIdAtSend, message, trimmedHistory)
+          assistantMessage = {
+            role: "assistant",
+            content: agentResponse.reply,
+          }
+          console.log("[API v2] Agent response received, memory updated:", agentResponse.memory_updated)
+        } catch (v2Error) {
+          // Fallback to v1 API if v2 fails
+          console.log("[API] v2 failed, falling back to v1:", v2Error)
+          const v1Response = await sendChatMessage(botIdAtSend, message, trimmedHistory)
+          assistantMessage = {
+            role: "assistant",
+            content: v1Response.reply,
+          }
+          if (v1Response.search_results) {
+            setSearchResults(v1Response.search_results)
+          }
         }
+        
         const updatedMessages = [...newMessages, assistantMessage]
 
         // If user switched bots mid-response, save history silently but avoid overwriting UI
         if (selectedBotId === botIdAtSend) {
           setMessages(updatedMessages)
-          setSearchResults(response.search_results)
         }
 
         saveChatHistory(botIdAtSend, updatedMessages)
@@ -190,7 +214,7 @@ export function Dashboard({ onBotChange, selectedBotId: propSelectedBotId }: Das
         // Show error message to user
         const errorMessage: ChatMessage = {
           role: "assistant",
-          content: "⚠️ I couldn't connect to the AI service right now. Please make sure the backend server is running on http://localhost:8000.\n\nTo start the backend:\n1. Open a terminal in the `backend` folder\n2. Run: `.\\start.ps1`\n\nThen try sending your message again!",
+          content: "⚠️ I couldn't connect to the AI service right now. Please make sure the backend server is running on http://localhost:8000.\n\nTo start the backend:\n1. Open a terminal in the `backend` folder\n2. Run: `.\\start.ps1` or `python main.py`\n\nThen try sending your message again!",
         }
         const updatedMessages = [...newMessages, errorMessage]
         if (selectedBotId === botIdAtSend) {
@@ -303,57 +327,40 @@ export function Dashboard({ onBotChange, selectedBotId: propSelectedBotId }: Das
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-1 sm:gap-2 md:gap-3 hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary/30 rounded-full pr-1 sm:pr-2">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[oklch(0.85_0.08_175)] flex items-center justify-center">
-                    <span className="text-xs sm:text-sm font-medium text-[oklch(0.35_0.05_175)]">
-                      {userName.charAt(0)}
-                    </span>
-                  </div>
+                  <Avatar className="w-8 h-8 sm:w-10 sm:h-10">
+                    <AvatarFallback className="bg-[oklch(0.85_0.08_175)] text-[oklch(0.35_0.05_175)]">
+                      {userInitials}
+                    </AvatarFallback>
+                  </Avatar>
                   <span className="hidden md:block text-sm font-medium text-foreground">
-                    {userName} S.
+                    {userName.split(" ")[0]}
                   </span>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>
                   <div className="flex flex-col">
-                    <span className="font-medium">{userName} S.</span>
-                    <span className="text-xs text-muted-foreground font-normal">priya@example.com</span>
+                    <span className="font-medium">{userName}</span>
+                    <span className="text-xs text-muted-foreground font-normal">{userEmail}</span>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer">
-                  <User className="w-4 h-4 mr-2" />
-                  My Profile
+                <DropdownMenuItem onClick={() => navigate("/analytics")}>
+                  <BarChart3 className="mr-2 h-4 w-4" />
+                  <span>Analytics</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer">
-                  <Settings className="w-4 h-4 mr-2" />
-                  Settings
+                <DropdownMenuItem>
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profile Settings</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem 
-                  className="cursor-pointer"
-                  onClick={() => navigate("/dashboard")}
-                >
-                  <BarChart3 className="w-4 h-4 mr-2" />
-                  My Dashboard
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  className="cursor-pointer"
-                  onClick={() => navigate("/analytics")}
-                >
-                  <BarChart3 className="w-4 h-4 mr-2" />
-                  Analytics
-                </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer">
-                  <Bell className="w-4 h-4 mr-2" />
-                  Notifications
+                <DropdownMenuItem>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Preferences</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  className="cursor-pointer text-destructive focus:text-destructive"
-                  onClick={handleLogout}
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Sign Out
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Logout</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

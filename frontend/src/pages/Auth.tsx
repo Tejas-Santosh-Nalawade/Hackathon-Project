@@ -4,7 +4,7 @@ export default function AuthPage() {
   return (
     <main className="min-h-screen bg-background flex flex-col lg:flex-row overflow-hidden">
       {/* Left side - Branding & Message */}
-      <div className="lg:w-1/2 bg-gradient-to-br from-[oklch(0.85_0.08_175)] to-[oklch(0.75_0.10_175)] p-6 lg:p-12 flex flex-col justify-between">
+      <div className="lg:w-1/2 bg-linear-to-br from-[oklch(0.85_0.08_175)] to-[oklch(0.75_0.10_175)] p-6 lg:p-12 flex flex-col justify-between">
         <div>
           {/* Logo */}
           <div className="flex items-center gap-3 mb-20">

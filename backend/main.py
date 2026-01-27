@@ -14,13 +14,34 @@ Run with: uvicorn main:app --reload
 import os
 from typing import Optional
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from openai import OpenAI
 
 from bots import get_bot, get_all_bots
 from search_utils import search_courses, search_jobs_news
+
+# Import agentic system components
+from agents.agent_manager import AgentManager
+from orchestrator.router import AgenticRouter
+from orchestrator.dashboard import DashboardService
+
+# Import authentication system
+from auth import (
+    UserRegistration,
+    UserCredentials,
+    SocialAuthRequest,
+    AuthResponse,
+    ProfileUpdateRequest,
+    UserProfile,
+    register_user,
+    login_user,
+    social_auth,
+    update_profile,
+    get_current_user,
+    user_db,
+)
 
 
 # =============================================================================
@@ -47,6 +68,11 @@ MODEL_PRIORITY = [
     "qwen/qwen3-32b",  # 1,000/day - smart backup
     "llama-3.1-8b-instant",  # 14,400/day - fast fallback, always available
 ]
+
+# Initialize agentic system (v2 architecture)
+agent_manager = AgentManager(groq_client=client, model_priority=MODEL_PRIORITY)
+agentic_router = AgenticRouter()
+dashboard_service = DashboardService(agent_manager=agent_manager)
 
 
 # =============================================================================
@@ -315,10 +341,506 @@ async def chat(request: ChatRequest):
 
 
 # =============================================================================
+# V2 API Endpoints (Agentic Architecture)
+# =============================================================================
+
+
+class AgentChatRequest(BaseModel):
+    """Request for direct agent interaction (v2)."""
+    
+    user_id: Optional[str] = Field(default=None, description="User identifier")
+    message: str = Field(..., min_length=1, max_length=2000, description="User's message")
+    history: Optional[list[ChatMessage]] = Field(default=[], description="Conversation history")
+
+
+class AgentChatResponse(BaseModel):
+    """Response from agent (v2)."""
+    
+    reply: str = Field(..., description="Agent's response")
+    agent: str = Field(..., description="Agent that responded")
+    memory_updated: bool = Field(..., description="Whether memory was updated")
+
+
+class AgenticChatRequest(BaseModel):
+    """Request for agentic auto-routing (v2)."""
+    
+    user_id: Optional[str] = Field(default=None, description="User identifier")
+    message: str = Field(..., min_length=1, max_length=2000, description="User's message")
+    history: Optional[list[ChatMessage]] = Field(default=[], description="Conversation history")
+
+
+class AgenticChatResponse(BaseModel):
+    """Response from agentic system (v2)."""
+    
+    reply: str = Field(..., description="Unified response")
+    agents_activated: list[str] = Field(..., description="Agents that responded")
+    routing_confidence: dict = Field(..., description="Confidence scores per agent")
+
+
+@app.post(
+    "/api/v2/agent/{agent_name}",
+    response_model=AgentChatResponse,
+    summary="Chat with specific agent (v2)",
+    description="Direct interaction with a specific agent. Agent uses memory and context."
+)
+async def chat_with_agent(agent_name: str, request: AgentChatRequest):
+    """
+    Chat directly with a specific agent.
+    
+    The agent will:
+    1. Recall relevant memories
+    2. Generate contextual response
+    3. Update its memory
+    """
+    # Get agent
+    agent = agent_manager.get_agent(agent_name)
+    
+    if not agent:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "error": f"Agent '{agent_name}' not found. Available: wellness, planner, finance, safety, career",
+                "code": "AGENT_NOT_FOUND"
+            }
+        )
+    
+    # Validate message
+    if not request.message.strip():
+        raise HTTPException(
+            status_code=400,
+            detail={"error": "Message cannot be empty", "code": "EMPTY_MESSAGE"}
+        )
+    
+    try:
+        # Convert history to dict format
+        history_dicts = [{"role": msg.role, "content": msg.content} for msg in request.history] if request.history else []
+        
+        # Generate response (agent handles memory automatically)
+        response = agent.generate_response(
+            user_message=request.message,
+            user_id=request.user_id,
+            conversation_history=history_dicts
+        )
+        
+        return AgentChatResponse(
+            reply=response,
+            agent=agent_name,
+            memory_updated=True
+        )
+    
+    except Exception as e:
+        print(f"Error in agent chat: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={"error": "Failed to generate response", "code": "AGENT_ERROR"}
+        )
+
+
+@app.post(
+    "/api/v2/agentic-chat",
+    response_model=AgenticChatResponse,
+    summary="Agentic auto-routing chat (v2)",
+    description="System automatically routes to appropriate agents based on message content"
+)
+async def agentic_chat(request: AgenticChatRequest):
+    """
+    Smart chat that automatically activates relevant agents.
+    
+    The system will:
+    1. Analyze user message
+    2. Route to appropriate agent(s)
+    3. Collect responses
+    4. Return unified reply
+    """
+    # Validate message
+    if not request.message.strip():
+        raise HTTPException(
+            status_code=400,
+            detail={"error": "Message cannot be empty", "code": "EMPTY_MESSAGE"}
+        )
+    
+    try:
+        # Route to appropriate agents
+        routing_scores = agentic_router.route_with_scores(request.message)
+        active_agents = agentic_router.route(request.message, threshold=0.5)
+        
+        # Convert history
+        history_dicts = [{"role": msg.role, "content": msg.content} for msg in request.history] if request.history else []
+        
+        # Collect responses from active agents
+        responses = []
+        for agent_name in active_agents[:2]:  # Limit to top 2 agents
+            agent = agent_manager.get_agent(agent_name)
+            if agent:
+                response = agent.generate_response(
+                    user_message=request.message,
+                    user_id=request.user_id,
+                    conversation_history=history_dicts
+                )
+                responses.append(f"**{agent.title}**: {response}")
+        
+        # Unify responses
+        if len(responses) > 1:
+            unified_reply = "\n\n".join(responses)
+        elif responses:
+            unified_reply = responses[0]
+        else:
+            unified_reply = "I'm not sure how to help with that. Could you rephrase?"
+        
+        return AgenticChatResponse(
+            reply=unified_reply,
+            agents_activated=active_agents,
+            routing_confidence=routing_scores
+        )
+    
+    except Exception as e:
+        print(f"Error in agentic chat: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={"error": "Failed to generate response", "code": "ROUTING_ERROR"}
+        )
+
+
+@app.get(
+    "/api/v2/dashboard",
+    summary="Get personalized dashboard (v2)",
+    description="Aggregated intelligence from all agents"
+)
+async def get_dashboard(user_id: Optional[str] = None):
+    """
+    Get personalized dashboard powered by agent memory.
+    
+    Returns metrics from all agents:
+    - Wellness score
+    - Task progress
+    - Savings goal
+    - Safety alerts
+    - Career growth
+    """
+    try:
+        dashboard_data = dashboard_service.get_dashboard_data(user_id)
+        return dashboard_data
+    
+    except Exception as e:
+        print(f"Error generating dashboard: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={"error": "Failed to generate dashboard", "code": "DASHBOARD_ERROR"}
+        )
+
+
+@app.get(
+    "/api/v2/greeting",
+    summary="Get personalized greeting (v2)",
+    description="Dynamic greeting with agent insights"
+)
+async def get_greeting(user_id: Optional[str] = None):
+    """
+    Get personalized greeting based on agent intelligence.
+    
+    Returns greeting with insights like:
+    - "FitHer noticed your stress is improving"
+    - "PlanPal helped you complete 8 tasks today"
+    """
+    try:
+        greeting_data = dashboard_service.get_personalized_greeting(user_id)
+        return greeting_data
+    
+    except Exception as e:
+        print(f"Error generating greeting: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={"error": "Failed to generate greeting", "code": "GREETING_ERROR"}
+        )
+
+
+@app.get(
+    "/api/v2/agent/{agent_name}/summary",
+    summary="Get agent summary (v2)",
+    description="Get status and memory summary for specific agent"
+)
+async def get_agent_summary(agent_name: str):
+    """
+    Get detailed summary of agent's state and memory.
+    
+    Returns:
+    - Interaction count
+    - Last interaction time
+    - Memory size
+    - Recent memories
+    """
+    try:
+        summary = dashboard_service.get_agent_status(agent_name)
+        
+        if "error" in summary:
+            raise HTTPException(
+                status_code=404,
+                detail={"error": summary["error"], "code": "AGENT_NOT_FOUND"}
+            )
+        
+        return summary
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error getting agent summary: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={"error": "Failed to get agent summary", "code": "SUMMARY_ERROR"}
+        )
+
+
+@app.get(
+    "/api/v2/agents",
+    summary="List all agents (v2)",
+    description="Get summaries of all available agents"
+)
+async def list_agents():
+    """
+    Get summaries of all agents in the system.
+    
+    Returns status, memory count, and activity for each agent.
+    """
+    try:
+        summaries = agent_manager.get_agent_summaries()
+        return summaries
+    
+    except Exception as e:
+        print(f"Error listing agents: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={"error": "Failed to list agents", "code": "LIST_ERROR"}
+        )
+
+# =============================================================================
+# Authentication Endpoints
+# =============================================================================
+
+@app.post(
+    "/api/auth/register",
+    response_model=AuthResponse,
+    summary="Register new user",
+    description="Create new user account with email and password"
+)
+async def register(registration: UserRegistration):
+    """
+    Register a new user account.
+    
+    Returns JWT token and user profile on success.
+    """
+    return register_user(registration)
+
+
+@app.post(
+    "/api/auth/login",
+    response_model=AuthResponse,
+    summary="Login user",
+    description="Login with email and password, returns JWT token"
+)
+async def login(credentials: UserCredentials):
+    """
+    Login existing user.
+    
+    Returns JWT token and user profile on success.
+    """
+    return login_user(credentials)
+
+
+@app.post(
+    "/api/auth/social",
+    response_model=AuthResponse,
+    summary="Google authentication",
+    description="Login or register with Google OAuth"
+)
+async def social_login(social_request: SocialAuthRequest):
+    """
+    Authenticate with Google OAuth.
+    
+    Verifies Google ID token and creates account if needed.
+    Returns JWT token and user profile.
+    """
+    return social_auth(social_request)
+
+
+@app.get(
+    "/api/auth/profile",
+    response_model=UserProfile,
+    summary="Get current user profile",
+    description="Get profile of authenticated user (requires JWT token)"
+)
+async def get_profile(user: UserProfile = Depends(get_current_user)):
+    """
+    Get current user's profile.
+    
+    Requires: Authorization header with Bearer token
+    """
+    return user
+
+
+@app.put(
+    "/api/auth/profile",
+    response_model=UserProfile,
+    summary="Update user profile",
+    description="Update name or preferences (requires JWT token)"
+)
+async def update_user_profile(
+    updates: ProfileUpdateRequest,
+    user: UserProfile = Depends(get_current_user)
+):
+    """
+    Update current user's profile.
+    
+    Requires: Authorization header with Bearer token
+    """
+    return update_profile(user, updates)
+
+
+@app.post(
+    "/api/auth/logout",
+    summary="Logout user",
+    description="Logout current user (client should discard token)"
+)
+async def logout():
+    """
+    Logout user.
+    
+    Since JWT is stateless, client should discard the token.
+    This endpoint is here for API completeness.
+    """
+    return {"message": "Logged out successfully. Please discard your token."}
+
+
+# =============================================================================
+# Dashboard Endpoints (user-specific)
+# =============================================================================
+
+@app.get(
+    "/api/dashboard",
+    summary="Get personalized dashboard",
+    description="Get user-specific dashboard data from all agents"
+)
+async def get_dashboard(user: UserProfile = Depends(get_current_user)):
+    """
+    Get personalized dashboard data for authenticated user.
+    
+    Returns agent metrics specific to this user.
+    """
+    try:
+        dashboard_data = dashboard_service.get_dashboard_data(user_id=user.user_id)
+        dashboard_data["user_name"] = user.name
+        dashboard_data["user_id"] = user.user_id
+        return dashboard_data
+    except Exception as e:
+        print(f"Dashboard error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={"error": "Failed to load dashboard", "code": "DASHBOARD_ERROR"}
+        )
+
+
+@app.get(
+    "/api/greeting",
+    summary="Get personalized greeting",
+    description="Get personalized greeting with user name and agent insights"
+)
+async def get_greeting(user: UserProfile = Depends(get_current_user)):
+    """
+    Get personalized greeting for authenticated user.
+    
+    Returns greeting with user's actual name and agent insights.
+    """
+    try:
+        greeting_data = dashboard_service.get_personalized_greeting(user_id=user.user_id)
+        
+        # Replace generic name with actual user name
+        time_of_day = greeting_data.get("time_of_day", "afternoon")
+        greeting_texts = {
+            "morning": f"Good morning, {user.name}",
+            "afternoon": f"Good afternoon, {user.name}",
+            "evening": f"Good evening, {user.name}"
+        }
+        greeting_data["greeting"] = greeting_texts.get(time_of_day, f"Hello, {user.name}")
+        greeting_data["user_name"] = user.name
+        
+        return greeting_data
+    except Exception as e:
+        print(f"Greeting error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={"error": "Failed to load greeting", "code": "GREETING_ERROR"}
+        )
+
+
+# =============================================================================
+# Protected Agent Endpoints (with user tracking)
+# =============================================================================
+
+@app.post(
+    "/api/v2/agent/{agent_name}/protected",
+    summary="Chat with agent (protected)",
+    description="Send message to agent with user authentication"
+)
+async def chat_with_agent_protected(
+    agent_name: str,
+    request: AgenticChatRequest,
+    user: UserProfile = Depends(get_current_user)
+):
+    """
+    Chat with specific agent (requires authentication).
+    
+    Tracks user interactions for personalized experience.
+    """
+    try:
+        # Get agent
+        agent = agent_manager.get_agent(agent_name)
+        if not agent:
+            raise HTTPException(
+                status_code=404,
+                detail={"error": f"Agent '{agent_name}' not found", "code": "AGENT_NOT_FOUND"}
+            )
+        
+        # Track interaction
+        user_db.increment_agent_interaction(user.email, agent_name)
+        
+        # Generate response with memory
+        reply = agent.generate_response(
+            user_input=request.message,
+            conversation_history=request.history or []
+        )
+        
+        return {
+            "agent": agent_name,
+            "reply": reply,
+            "memory_updated": True,
+            "user_id": user.user_id
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in protected chat: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={"error": f"Agent error: {str(e)}", "code": "AGENT_ERROR"}
+        )
+
+# =============================================================================
 # Run (for development)
 # =============================================================================
 
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    print("🚀 Starting HerSpace Backend Server...")
+    print("📍 API: http://127.0.0.1:8000")
+    print("📖 Docs: http://127.0.0.1:8000/docs")
+    print("🔐 Auth endpoints ready!")
+    print("")
+    
+    uvicorn.run(
+        "main:app",
+        host="127.0.0.1",
+        port=8000,
+        reload=True,
+        log_level="info"
+    )
