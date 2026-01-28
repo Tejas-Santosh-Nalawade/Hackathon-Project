@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment files (will be set via environment variables)
+.env
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Scripts
+*.ps1
+test-*.ps1
+setup-and-run.ps1
+
+# Documentation
+README.md
+API_KEY_SETUP.md
+
+# Git
+.git/
+.gitignore
+
+# Storage (will be volume mounted)
+storage/*.pkl
+storage/*.json
