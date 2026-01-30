@@ -1,42 +1,28 @@
 """
-Embedding Service for Agentic Memory System
---------------------------------------------
-Converts text to vector embeddings for semantic search and memory recall.
-Uses sentence-transformers for local, fast embeddings.
+Lightweight Embedding Service for Agentic Memory System
+--------------------------------------------------------
+Uses simple hash-based embeddings instead of ML models for memory efficiency.
+Perfect for Render's 512MB free tier deployment.
 """
 
 from typing import List
+import hashlib
 import numpy as np
 
 
 class EmbeddingService:
     """
-    Manages text-to-vector conversion for agent memory.
-    
-    Uses a lightweight model that works offline and is fast enough
-    for real-time agent interactions.
+    Manages text-to-vector conversion using lightweight hashing.
+    No ML models = minimal memory footprint (<5MB vs 400MB+)
     """
     
     def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
-        """
-        Initialize embedding model.
-        
-        Args:
-            model_name: HuggingFace model name. Default is lightweight and fast.
-        """
-        try:
-            from sentence_transformers import SentenceTransformer
-            self.model = SentenceTransformer(model_name)
-            self.dimension = 384  # Dimension of all-MiniLM-L6-v2
-        except ImportError:
-            raise ImportError(
-                "sentence-transformers not installed. "
-                "Run: pip install sentence-transformers"
-            )
+        """Initialize lightweight embedding (model_name kept for compatibility)"""
+        self.dimension = 64  # Small dimension for memory efficiency
     
     def embed(self, text: str) -> np.ndarray:
         """
-        Convert single text to embedding vector.
+        Convert single text to embedding vector using hashing.
         
         Args:
             text: Input text to embed
@@ -45,11 +31,24 @@ class EmbeddingService:
             numpy array of shape (dimension,)
         """
         if not text or not text.strip():
-            # Return zero vector for empty text
             return np.zeros(self.dimension)
         
-        embedding = self.model.encode(text, convert_to_numpy=True)
-        return embedding
+        # Use MD5 hash and convert to normalized vector
+        hash_obj = hashlib.md5(text.lower().strip().encode())
+        hash_bytes = hash_obj.digest()
+        
+        # Convert bytes to normalized floats
+        embedding = []
+        for i in range(0, len(hash_bytes), 2):
+            if i + 1 < len(hash_bytes):
+                val = (hash_bytes[i] * 256 + hash_bytes[i + 1]) / 65535.0
+                embedding.append(val * 2 - 1)  # Normalize to [-1, 1]
+        
+        # Pad to dimension
+        while len(embedding) < self.dimension:
+            embedding.append(0.0)
+        
+        return np.array(embedding[:self.dimension])
     
     def embed_batch(self, texts: List[str]) -> np.ndarray:
         """
@@ -64,10 +63,8 @@ class EmbeddingService:
         if not texts:
             return np.array([])
         
-        # Filter out empty strings
-        non_empty_texts = [t if t.strip() else " " for t in texts]
-        embeddings = self.model.encode(non_empty_texts, convert_to_numpy=True)
-        return embeddings
+        embeddings = [self.embed(t) for t in texts]
+        return np.array(embeddings)
     
     def similarity(self, embedding1: np.ndarray, embedding2: np.ndarray) -> float:
         """
