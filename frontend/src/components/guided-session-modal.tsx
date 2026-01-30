@@ -36,14 +36,14 @@ export function GuidedSessionModal({
 
   useEffect(() => {
     if (isOpen && !isMuted) {
-      // Welcome message
-      const welcomeMsg = `Let's begin your ${sessionType} session. I'll guide you through ${steps.length} steps. Listen carefully and follow along.`
+      // Welcome message (shorter, clearer)
+      const welcomeMsg = `Let's begin your ${sessionType} session. I'll guide you step by step.`
       voiceAgent.speak(welcomeMsg)
       setIsPlaying(true)
       
       setTimeout(() => {
         startStep(0)
-      }, 5000)
+      }, 3000)
     }
 
     return () => {
@@ -68,7 +68,7 @@ export function GuidedSessionModal({
           startStep(stepIndex + 1)
         } else {
           // Session complete
-          const completeMsg = `Great job! You've completed the ${sessionType} session. How do you feel?`
+          const completeMsg = `Great job! Session complete.`
           voiceAgent.speak(completeMsg)
         }
       }, step.duration * 1000)

@@ -137,7 +137,7 @@ export class VoiceOutput {
     console.log("Selected voice:", this.voice?.name, "Lang:", this.voice?.lang)
   }
 
-  speak(text: string, rate: number = 1.25, onEnd?: () => void, pitch: number = 1.1): Promise<void> {
+  speak(text: string, rate: number = 0.75, onEnd?: () => void): Promise<void> {
     return new Promise((resolve, reject) => {
       // Cancel any current speech
       if (this.currentUtterance) {
@@ -145,8 +145,8 @@ export class VoiceOutput {
       }
 
       this.currentUtterance = new SpeechSynthesisUtterance(text)
-      this.currentUtterance.rate = rate // Faster, more natural pace
-      this.currentUtterance.pitch = pitch // Slightly higher for female voice
+      this.currentUtterance.rate = rate // Slower, human-like pace
+      this.currentUtterance.pitch = 1.0
       this.currentUtterance.volume = 1.0
 
       if (this.voice) {
@@ -253,10 +253,24 @@ export class VoiceAgent {
   }
 
   /**
-   * Speak AI response
+   * Speak AI response with natural pauses
    */
   async speak(text: string, onComplete?: () => void) {
-    await this.voiceOutput.speak(text, 0.9, onComplete)
+    // Split text into sentences for more natural speech
+    const sentences = text.match(/[^.!?]+[.!?]+/g) || [text]
+    
+    for (let i = 0; i < sentences.length; i++) {
+      const sentence = sentences[i].trim()
+      if (sentence) {
+        await this.voiceOutput.speak(sentence, 0.75)
+        // Add natural pause between sentences (500ms)
+        if (i < sentences.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500))
+        }
+      }
+    }
+    
+    if (onComplete) onComplete()
   }
 
   /**
@@ -314,43 +328,43 @@ export class VoiceAgent {
     
     const input = userInput.toLowerCase()
     
-    // Exercise requests - simplified conversational responses
+    // Exercise requests - simplified conversational responses (one thing at a time)
     if (input.includes("neck") || input.includes("stiff neck") || input.includes("hurt")) {
-      return "I understand your neck is bothering you. I can guide you through a gentle 2-minute sitting stretch that really helps. Would you like me to guide you through it now, or would you prefer some other relief options?"
+      return "I understand your neck is bothering you. Let me guide you through a gentle 2-minute sitting stretch."
     }
     
     if (input.includes("stress") || input.includes("anxious") || input.includes("overwhelm")) {
-      return "I hear you. Stress can be overwhelming. Let me help you calm down with a simple breathing technique. Would you like to try a 2-minute box breathing exercise, or would you prefer something else?"
+      return "I hear you. Let me help you calm down with a simple breathing technique."
     }
     
     if (input.includes("eye") || input.includes("screen") || input.includes("tired eyes")) {
-      return "Your eyes need a break from the screen. I can guide you through a quick 20-second eye relaxation exercise. Shall we do it together now?"
+      return "Your eyes need a break. Let me guide you through a quick eye relaxation exercise."
     }
     
     if (input.includes("shoulder") || input.includes("back") || input.includes("tense")) {
-      return "Those shoulders carry a lot of tension! I have a simple seated stretch that takes just 2 minutes and feels amazing. Want to try it?"
+      return "Those shoulders need attention. I have a simple seated stretch that feels amazing."
     }
     
     if (input.includes("breathing") || input.includes("breath")) {
-      return "Breathing exercises are so helpful! I can guide you through a calming technique that takes just 2 minutes. Ready to feel more relaxed?"
+      return "Let me guide you through a calming breathing technique. It takes just 2 minutes."
     }
     
     if (input.includes("wrist") || input.includes("hand") || input.includes("typing")) {
-      return "Your hands and wrists work so hard! I can show you some gentle stretches you can do right at your desk. Takes about 2 minutes. Interested?"
+      return "Your hands and wrists need relief. I can show you gentle stretches at your desk."
     }
     
     // General requests
     if (input.includes("exercise") || input.includes("help") || input.includes("stretch")) {
-      return "I can guide you through several desk exercises. I have neck relief, shoulder stretches, breathing exercises, eye relaxation, wrist relief, or spine twists. All can be done sitting. Which area needs attention most?"
+      return "I can guide you through desk exercises. Tell me what area needs attention. Neck, shoulders, eyes, or back?"
     }
     
     // Greeting
     if (input.includes("hi") || input.includes("hello") || input.includes("hey")) {
-      return "Hi! I'm FitHer, your wellness companion. I'm here to guide you through desk exercises, breathing techniques, and stress relief - all while you stay seated. What's bothering you today? Your neck, shoulders, eyes, or stress?"
+      return "Hi! I'm FitHer, your wellness companion. What's bothering you today?"
     }
     
     // Default
-    return "I'm here to help you feel better at your desk. You can ask me for neck relief, shoulder stretches, breathing exercises, eye relaxation, or stress relief. What would help you most right now?"
+    return "I'm here to help you feel better. Tell me what area needs relief."
   }
 
   /**
