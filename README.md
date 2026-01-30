@@ -457,6 +457,7 @@ GitHub                   |  CI/CD
 │  Intent (LLM): 40 points                     │
 │  Memory:       30 points                     │
 │  ─────────────────────                       │
+
 ### **Agent Scoring System**
 
 **How Router Scores (0-100):**
