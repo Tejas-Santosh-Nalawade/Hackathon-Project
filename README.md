@@ -381,156 +381,95 @@ git push origin main
 # 4. Build Command: pip install -r requirements-light.txt
 ---
 
-## 📝 Technology Stack (Simple)
+## 📝 Tech Stack
 
-### **Frontend**
-- **React 19** + **TypeScript** - UI with type safety
-- **Vite** - Lightning-fast build tool
-- **Tailwind CSS** - Styling
-- **Radix UI** - Accessible components (40+ components)
-- **Lucide Icons** - Icon library
-- **Web Speech API** - Browser voice (TTS/STT)
-- **React Hook Form + Zod** - Form validation
-- **SWR** - Data fetching
+```
+┌──────────────────────────────────────────────────────────────┐
+│                         FRONTEND                              │
+├──────────────────────────────────────────────────────────────┤
+│  React 19 + TypeScript     │  UI Framework                   │
+│  Vite 7.2.4                │  Build Tool                     │
+│  Tailwind CSS              │  Styling                        │
+│  Radix UI (40+ components) │  Accessible UI                  │
+│  Web Speech API            │  Voice (TTS/STT)                │
+└──────────────────────────────────────────────────────────────┘
 
-### **Backend**
-- **FastAPI** + **Python 3.11** - Async web framework
-- **Groq API** - LLM (llama-3.3-70b-versatile)
-- **DuckDuckGo Search** - Web search for courses/jobs
-- **JWT + Bcrypt** - Authentication
-- **Google OAuth** - Social login
-- **Numpy + hashlib** - Hash-based embeddings (5MB)
+┌──────────────────────────────────────────────────────────────┐
+│                         BACKEND                               │
+├──────────────────────────────────────────────────────────────┤
+│  FastAPI + Python 3.11     │  Async Web Framework            │
+│  Groq API (llama-3.3-70b)  │  LLM Provider                   │
+│  JWT + Bcrypt              │  Authentication                 │
+│  DuckDuckGo Search         │  Web Search                     │
+│  Hash-based Embeddings     │  Memory (5MB only!)             │
+└──────────────────────────────────────────────────────────────┘
 
-### **Deployment**
-- **Vercel** - Frontend hosting (free tier)
-- **Render** - Backend hosting (512MB free tier)
-- **GitHub** - Version control + CI/CD
+┌──────────────────────────────────────────────────────────────┐
+│                       DEPLOYMENT                              │
+├──────────────────────────────────────────────────────────────┤
+│  Vercel (Frontend)         │  Free Tier                      │
+│  Render (Backend)          │  512MB Free Tier                │
+│  GitHub                    │  CI/CD                          │
+└──────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## 🤖 How the Agent System Works
-
-### **The Agentic Orchestrator**
+## 🤖 How Agents Work
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     USER SENDS MESSAGE                       │
-│              "I need time management and exercise"           │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   AGENTIC ROUTER (Step 1)                    │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │  • Analyzes message intent using LLM                  │  │
-│  │  • Detects: "time management" + "exercise"           │  │
-│  │  • Scores each agent's relevance (0-100)             │  │
-│  │  • Result: PlanPal=95, FitHer=90, Others=20          │  │
-│  └───────────────────────────────────────────────────────┘  │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│               AGENT MANAGER (Step 2)                         │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │  • Routes to PlanPal (highest score)                  │  │
-│  │  • Marks FitHer as "collaboration needed"             │  │
-│  │  • Passes user message + conversation history         │  │
-│  └───────────────────────────────────────────────────────┘  │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   PLANPAL AGENT (Step 3)                     │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │  1. Checks Vector Memory for user patterns            │  │
-│  │     "User struggles with mornings" (from past chats)  │  │
-│  │                                                        │  │
-│  │  2. Generates Time Management Plan                    │  │
-│  │     • 6:30 AM - Morning routine                       │  │
-│  │     • 7:00 AM - Exercise (→ asks FitHer for help)    │  │
-│  │     • 8:00 AM - Work starts                           │  │
-│  │                                                        │  │
-│  │  3. Stores new memory:                                │  │
-│  │     "User wants exercise + time management"           │  │
-│  └───────────────────────────────────────────────────────┘  │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│              FITHER AGENT (Step 4 - Collaboration)           │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │  1. Receives context from PlanPal                      │  │
-│  │     "User needs 30-min morning exercise"              │  │
-│  │                                                        │  │
-│  │  2. Checks own vector memory                          │  │
-│  │     "User has back pain" (from previous wellness chat)│  │
-│  │                                                        │  │
-│  │  3. Generates Exercise Plan                           │  │
-│  │     • 10 min stretching (for back)                    │  │
-│  │     • 15 min yoga (guided session available)          │  │
-│  │     • 5 min breathing exercise                        │  │
-│  │                                                        │  │
-│  │  4. Updates memory:                                   │  │
-│  │     "User prefers morning workouts"                   │  │
-│  └───────────────────────────────────────────────────────┘  │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│           RESPONSE MERGER (Step 5)                           │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │  • Combines PlanPal's schedule + FitHer's exercises   │  │
-│  │  • Creates unified response                           │  │
-│  │  • Adds action buttons (Start Session, Set Reminder) │  │
-│  └───────────────────────────────────────────────────────┘  │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    USER RECEIVES                             │
-│  "Here's your morning routine:                               │
-│   6:30 AM - Wake up                                          │
-│   7:00 AM - Exercise (stretching + yoga for back pain)       │
-│   8:00 AM - Start work                                       │
-│                                                              │
-│   [Start Box Breathing Session] [Set Morning Reminder]"     │
-└─────────────────────────────────────────────────────────────┘
+USER: "I need time management and exercise"
+  │
+  ▼
+┌─────────────────────────────────────────────────────────┐
+│ ⚙️  ROUTER: Analyzes intent → Scores agents            │
+│     PlanPal: 95 ✅  |  FitHer: 90 ✅  |  Others: <60 ❌  │
+└─────────────────────────────────────────────────────────┘
+  │
+  ▼
+┌─────────────────────────────────────────────────────────┐
+│ 📅 PLANPAL AGENT                                        │
+│  1. Checks memory: "User struggles with mornings"      │
+│  2. Creates schedule: 6:30 AM - 8:00 AM                │
+│  3. Asks FitHer for exercise help                      │
+└─────────────────────────────────────────────────────────┘
+  │
+  ▼
+┌─────────────────────────────────────────────────────────┐
+│ 💪 FITHER AGENT (Collaboration)                         │
+│  1. Gets context: "30-min morning exercise needed"     │
+│  2. Checks memory: "User has back pain"                │
+│  3. Suggests: Stretching + Yoga + Breathing            │
+└─────────────────────────────────────────────────────────┘
+  │
+  ▼
+┌─────────────────────────────────────────────────────────┐
+│ ✨ MERGED RESPONSE                                      │
+│  "Here's your morning routine:                         │
+│   6:30 AM - Wake up                                    │
+│   7:00 AM - Exercise (stretching + yoga for back)     │
+│   8:00 AM - Start work                                 │
+│   [Start Session] [Set Reminder]"                      │
+└─────────────────────────────────────────────────────────┘
 ```
 
-### **Scoring System Explained**
+### **Agent Scoring**
 
-Each agent gets a **relevance score (0-100)** based on:
-
-1. **Keyword Matching** (30 points)
-   - PlanPal keywords: "time", "manage", "schedule", "balance"
-   - FitHer keywords: "exercise", "pain", "wellness", "health"
-   - Example: "time management" → PlanPal +30
-
-2. **Intent Classification** (40 points)
-   - LLM analyzes semantic meaning
-   - "I need to organize my day" → PlanPal +40
-   - "My back hurts" → FitHer +40
-
-3. **Context from Memory** (30 points)
-   - User previously talked about work stress → PlanPal +15
-   - User has history with FitHer → FitHer +15
-
-**Final Scores Example:**
 ```
-Message: "I need time management and exercise"
-
-PlanPal:  30 (keyword) + 40 (intent) + 25 (context) = 95 ✅ PRIMARY
-FitHer:   30 (keyword) + 35 (intent) + 25 (context) = 90 ✅ COLLABORATE
-SpeakUp:  5 (keyword)  + 5 (intent)  + 10 (context) = 20 ❌ SKIP
-GrowthGuru: 0          + 10          + 5            = 15 ❌ SKIP
-PaisaWise:  0          + 5           + 5            = 10 ❌ SKIP
+┌──────────────────────────────────────────────┐
+│ 🎯 How Router Scores Agents (0-100)         │
+├──────────────────────────────────────────────┤
+│  Keywords:     30 points                     │
+│  Intent (LLM): 40 points                     │
+│  Memory:       30 points                     │
+│  ─────────────────────                       │
+│  Total:        100 points                    │
+├──────────────────────────────────────────────┤
+│  ≥ 80: Primary agent (responds)             │
+│  60-79: Collaborates                        │
+│  < 60: Skipped                              │
+└──────────────────────────────────────────────┘
 ```
-
-**Routing Rules:**
-- Score ≥ 80: Primary agent (responds)
-- Score 60-79: Collaboration agent (contributes)
-- Score < 60: Skipped
 
 ---
 
@@ -586,69 +525,38 @@ Result: Agent recommends quick exercises focusing on back pain
 
 ## 📊 Dashboard Intelligence
 
-The dashboard shows **real agent insights**, not fake data:
-
 ```
-User opens Dashboard
-       ↓
-Frontend requests: GET /api/v1/dashboard/metrics
-       ↓
-Backend → DashboardService queries all 5 agents
-       ↓
-┌─────────────────────────────────────────┐
-│  AGENT MANAGER AGGREGATES:              │
-│  • Total conversations: 47              │
-│  • FitHer: 12 chats                     │
-│  • PlanPal: 8 chats                     │
-│  • SpeakUp: 3 chats                     │
-│  • GrowthGuru: 15 chats                 │
-│  • PaisaWise: 9 chats                   │
-│                                         │
-│  TOP TOPICS (from vector memory):       │
-│  1. "time management" - 8 mentions      │
-│  2. "back pain" - 6 mentions            │
-│  3. "career growth" - 5 mentions        │
-│                                         │
-│  WELLNESS SCORE: 72/100                 │
-│  (based on FitHer session frequency)    │
-│                                         │
-│  RECOMMENDATIONS:                       │
-│  • You haven't exercised in 3 days      │
-│  • 2 unread career resources            │
-│  • Budget review pending                │
-└─────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────┐
+│  📈 YOUR HERSPACE DASHBOARD                           │
+├───────────────────────────────────────────────────────┤
+│  Total Conversations: 47                              │
+│  ┌─────────────────────────────────────────────────┐ │
+│  │ 💪 FitHer: 12    📅 PlanPal: 8   🛡️ SpeakUp: 3 │ │
+│  │ 🚀 GrowthGuru: 15   💰 PaisaWise: 9             │ │
+│  └─────────────────────────────────────────────────┘ │
+│                                                       │
+│  🎯 Top Topics (from your chats):                    │
+│    1. time management - 8 times                      │
+│    2. back pain - 6 times                            │
+│    3. career growth - 5 times                        │
+│                                                       │
+│  💚 Wellness Score: 72/100                           │
+│     Based on your FitHer activity                    │
+│                                                       │
+│  💡 Recommendations:                                 │
+│    • Haven't exercised in 3 days                    │
+│    • 2 career resources waiting                     │
+│    • Budget review due                              │
+└───────────────────────────────────────────────────────┘
+
+✅ Real data from agent memories
+❌ No fake/hardcoded numbers
 ```
+Traditional:  "back pain" → ML model (400MB) → 384 dimensions
+Our approach: "back pain" → MD5 hash (5MB)  → 64 dimensions
 
-**Everything is calculated from:**
-- ✅ Real conversation history
-- ✅ Agent vector memories
-- ✅ User interaction patterns
-- ✅ Timestamp analysis
-
-**NOT from:**
-- ❌ Hardcoded values
-- ❌ Random numbers
-- ❌ Static data
-
-### **Production Configuration**
-
-**Backend** (`backend/.env`)
-```env
-GROQ_API_KEY=gsk_your_groq_api_key
-JWT_SECRET=your_random_secret_key_min_32_chars
-GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=GOCSPX-your_google_client_secret
-```
-
-**Frontend** (`frontend/.env.local`)
-```env
-VITE_API_URL=https://your-backend-url.onrender.com
-```
-
-### **Memory Optimization**
-Our backend is optimized for Render's 512MB free tier:
-- ✅ Hash-based embeddings (5MB vs 400MB for ML models)
-- ✅ Lightweight dependencies (`requirements-light.txt`)
+✅ 98% less memory  |  ✅ 10x faster  |  ✅ Fits free tier
+```rements-light.txt`)
 - ✅ Single worker configuration
 - ✅ No heavy ML frameworks (numpy only)
 
