@@ -97,10 +97,15 @@ export class VoiceOutput {
   private voice: SpeechSynthesisVoice | null = null
   private queue: string[] = []
   private isSpeaking: boolean = false
+  private onSpeakingChangeCallback?: (isSpeaking: boolean) => void
 
   constructor() {
     this.synthesis = window.speechSynthesis
     this.initVoice()
+  }
+
+  onSpeakingChange(callback: (isSpeaking: boolean) => void) {
+    this.onSpeakingChangeCallback = callback
   }
 
   private async initVoice() {
@@ -111,14 +116,25 @@ export class VoiceOutput {
       })
     }
 
-    // Select best female voice for Indian context
+    // Select best Indian female voice
     const voices = this.synthesis.getVoices()
+    
+    // Priority order for Indian female voice:
+    // 1. Indian female voice (en-IN)
+    // 2. Female voices with Indian/Hindi origins
+    // 3. Generic female English voice
     this.voice =
+      voices.find((v) => v.lang === "en-IN" && v.name.includes("Female")) ||
+      voices.find((v) => v.lang === "hi-IN" && v.name.includes("Female")) ||
+      voices.find((v) => v.lang === "en-IN") ||
+      voices.find((v) => v.lang === "hi-IN") ||
+      voices.find((v) => v.name.includes("Google UK English Female")) ||
       voices.find((v) => v.name.includes("Female") && v.lang.startsWith("en")) ||
       voices.find((v) => v.name.includes("Samantha")) ||
-      voices.find((v) => v.lang === "en-IN") ||
       voices.find((v) => v.lang.startsWith("en")) ||
       voices[0]
+    
+    console.log("Selected voice:", this.voice?.name, "Lang:", this.voice?.lang)
   }
 
   speak(text: string, rate: number = 0.75, onEnd?: () => void): Promise<void> {
@@ -137,18 +153,30 @@ export class VoiceOutput {
         this.currentUtterance.voice = this.voice
       }
 
+      this.currentUtterance.onstart = () => {
+        this.isSpeaking = true
+        if (this.onSpeakingChangeCallback) {
+          this.onSpeakingChangeCallback(true)
+        }
+      }
+
       this.currentUtterance.onend = () => {
         this.isSpeaking = false
+        if (this.onSpeakingChangeCallback) {
+          this.onSpeakingChangeCallback(false)
+        }
         if (onEnd) onEnd()
         resolve()
       }
       
       this.currentUtterance.onerror = (error) => {
         this.isSpeaking = false
+        if (this.onSpeakingChangeCallback) {
+          this.onSpeakingChangeCallback(false)
+        }
         reject(error)
       }
 
-      this.isSpeaking = true
       this.synthesis.speak(this.currentUtterance)
     })
   }
@@ -158,6 +186,9 @@ export class VoiceOutput {
     this.currentUtterance = null
     this.isSpeaking = false
     this.queue = []
+    if (this.onSpeakingChangeCallback) {
+      this.onSpeakingChangeCallback(false)
+    }
   }
 
   pause() {

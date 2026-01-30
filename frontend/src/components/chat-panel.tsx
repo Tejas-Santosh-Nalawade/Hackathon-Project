@@ -3,9 +3,12 @@
 import React, { useState, useRef, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import type { Bot, ChatMessage, SearchResult } from "@/lib/types"
-import { Send, ExternalLink, Loader2, Mic, Volume2, Lock, Paperclip } from "lucide-react"
+import { Send, ExternalLink, Loader2, Mic, Volume2, Lock, Paperclip, Play, VolumeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { analyticsTracker } from "@/lib/analytics-tracker"
+import { VoiceOutput } from "@/lib/voice-agent"
+import { InteractiveVoiceGuide } from "@/components/interactive-voice-guide"
+import { SpeakingAvatar, SpeakingIndicator } from "@/components/speaking-avatar"
 
 interface ChatPanelProps {
   bot: Bot | null
@@ -49,6 +52,80 @@ export function ChatPanel({
   const inputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const chatContainerRef = useRef<HTMLDivElement>(null)
+  const [showGuide, setShowGuide] = useState<string | null>(null)
+  const voiceOutputRef = useRef<VoiceOutput | null>(null)
+  const lastSpokenMessageRef = useRef<string>("")
+  const [isSpeaking, setIsSpeaking] = useState(false)
+  const initialMessageCountRef = useRef<number>(0)
+  const hasInitializedRef = useRef(false)
+
+  // Initialize voice output
+  useEffect(() => {
+    if (!voiceOutputRef.current) {
+      voiceOutputRef.current = new VoiceOutput()
+      voiceOutputRef.current.onSpeakingChange((speaking) => {
+        console.log("Speaking state changed:", speaking)
+        setIsSpeaking(speaking)
+      })
+    }
+  }, [])
+
+  // Track initial message count to avoid speaking old messages
+  useEffect(() => {
+    if (!hasInitializedRef.current && messages.length > 0) {
+      initialMessageCountRef.current = messages.length
+      const lastMessage = messages[messages.length - 1]
+      if (lastMessage.role === "assistant" && bot?.bot_id) {
+        // Mark existing messages as already "spoken" so they won't be read
+        lastSpokenMessageRef.current = `${bot.bot_id}-${lastMessage.content}`
+      }
+      hasInitializedRef.current = true
+    }
+  }, [messages, bot?.bot_id])
+
+  // Auto-speak only NEW bot messages (not existing ones)
+  useEffect(() => {
+    if (messages.length === 0 || !hasInitializedRef.current) return
+
+    // Only speak if there are NEW messages beyond the initial count
+    if (messages.length <= initialMessageCountRef.current) return
+
+    const lastMessage = messages[messages.length - 1]
+    
+    // Only speak if it's a new bot message we haven't spoken yet
+    if (
+      lastMessage.role === "assistant" &&
+      voiceOutputRef.current &&
+      !isLoading &&
+      !showGuide &&
+      bot?.bot_id // Make sure we have a bot context
+    ) {
+      // Create a unique key for this message in this bot context
+      const messageKey = `${bot.bot_id}-${lastMessage.content}`
+      
+      if (messageKey !== lastSpokenMessageRef.current) {
+        lastSpokenMessageRef.current = messageKey
+        
+        voiceOutputRef.current.speak(lastMessage.content, 1.25).catch((error) => {
+          console.error("Error auto-speaking message:", error)
+        })
+      }
+    }
+  }, [messages, isLoading, showGuide, bot?.bot_id])
+
+  // Stop speech and reset when switching bots
+  useEffect(() => {
+    // Reset initialization when bot changes
+    hasInitializedRef.current = false
+    initialMessageCountRef.current = 0
+    
+    return () => {
+      if (voiceOutputRef.current) {
+        voiceOutputRef.current.stop()
+      }
+      lastSpokenMessageRef.current = ""
+    }
+  }, [bot?.bot_id])
 
   // Auto-scroll when messages change
   useEffect(() => {
@@ -72,6 +149,11 @@ export function ChatPanel({
         message = `${message} [File attached: ${selectedFile.name}]`
       }
       
+      // Stop any ongoing speech when user sends new message
+      if (voiceOutputRef.current) {
+        voiceOutputRef.current.stop()
+      }
+      
       // Track user activity
       const user = localStorage.getItem("user")
       const userData = user ? JSON.parse(user) : { name: "Guest", id: "guest" }
@@ -93,6 +175,37 @@ export function ChatPanel({
       setInput("")
       setSelectedFile(null)
     }
+  }
+
+  const handleStartGuide = (type: string) => {
+    // Stop any ongoing speech from chat
+    if (voiceOutputRef.current) {
+      voiceOutputRef.current.stop()
+    }
+    setShowGuide(type)
+  }
+
+  const handleGuideComplete = () => {
+    setShowGuide(null)
+    // Also stop any voice from the guide
+    if (voiceOutputRef.current) {
+      voiceOutputRef.current.stop()
+    }
+  }
+
+  // Detect exercise type from message
+  const detectExerciseType = (content: string) => {
+    const text = content.toLowerCase()
+    if (text.includes("box breathing") || text.includes("breathing")) {
+      return "box-breathing"
+    }
+    if (text.includes("neck") || text.includes("shoulder")) {
+      return "neck-relief"
+    }
+    if (text.includes("deep breath")) {
+      return "deep-breathing"
+    }
+    return null
   }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -137,11 +250,31 @@ export function ChatPanel({
 
   return (
     <div className="h-full relative bg-muted/30 rounded-2xl md:rounded-3xl border-2 border-border shadow-lg flex flex-col overflow-hidden">
+      {/* Show Interactive Guide Modal */}
+      {showGuide && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="relative max-w-4xl w-full mx-4">
+            <InteractiveVoiceGuide
+              exerciseType={showGuide as any}
+              onComplete={handleGuideComplete}
+              onCancel={handleGuideComplete}
+            />
+          </div>
+        </div>
+      )}
+      
       {/* Private Mode Indicator - Moved to top-left */}
       <div className="absolute top-1 left-2 md:top-2 md:left-4 flex items-center gap-1 md:gap-1.5 bg-muted/50 px-1.5 md:px-2 py-0.5 md:py-1 rounded-full text-muted-foreground z-10 backdrop-blur-sm">
         <Lock className="w-2.5 h-2.5 md:w-3 md:h-3" />
         <span className="text-[8px] md:text-[10px] font-medium uppercase tracking-wide">Private</span>
       </div>
+      
+      {/* Debug: Speaking State Indicator */}
+      {isSpeaking && (
+        <div className="absolute top-1 right-2 bg-purple-600 text-white text-xs px-2 py-1 rounded-full z-50">
+          🎤 Speaking
+        </div>
+      )}
       
       {/* Chat Messages Area - Scrollable with fixed height */}
       <div 
@@ -168,12 +301,42 @@ export function ChatPanel({
                   </div>
                 </div>
               ) : (
-                <div className="flex">
-                  <div className="max-w-[90%] md:max-w-md bg-card rounded-xl md:rounded-2xl px-3 py-2 md:px-5 md:py-4 shadow-sm border border-border">
-                    <p className="text-xs md:text-sm text-card-foreground whitespace-pre-wrap leading-relaxed">
-                      {message.content}
-                    </p>
+                <div className="flex gap-3 items-start">
+                  <div className="max-w-[90%] md:max-w-md">
+                    <div className="bg-card rounded-xl md:rounded-2xl px-3 py-2 md:px-5 md:py-4 shadow-sm border border-border">
+                      <p className="text-xs md:text-sm text-card-foreground whitespace-pre-wrap leading-relaxed">
+                        {message.content}
+                      </p>
+                    </div>
+                    
+                    {/* Interactive Session Button */}
+                    {(() => {
+                      const exerciseType = detectExerciseType(message.content)
+                      if (exerciseType) {
+                        return (
+                          <button
+                            onClick={() => handleStartGuide(exerciseType)}
+                            className="mt-2 flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/50 shadow-sm"
+                            title="Start interactive guided session"
+                          >
+                            <Play className="w-3 h-3" />
+                            <span>Start Interactive Session</span>
+                          </button>
+                        )
+                      }
+                      return null
+                    })()}
                   </div>
+                  
+                  {/* Speaking Avatar next to message - More Visible */}
+                  {index === messages.length - 1 && isSpeaking && (
+                    <div className="shrink-0 ml-3 relative" style={{ minWidth: '60px' }}>
+                      <div className="absolute -inset-2 rounded-full border-4 border-purple-500 animate-ping opacity-75" style={{ animationDuration: '1.5s' }} />
+                      <div className="relative z-10">
+                        <SpeakingAvatar isSpeaking={true} size="sm" />
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
               

@@ -1,12 +1,12 @@
 "use client"
 
-import React from "react"
-
 import { useState, useRef, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import type { Bot, ChatMessage, SearchResult } from "@/lib/types"
-import { Send, Trash2, ExternalLink, Loader2 } from "lucide-react"
+import { Send, Trash2, ExternalLink, Loader2, Volume2, VolumeOff, Play } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { VoiceOutput } from "@/lib/voice-agent"
+import { InteractiveVoiceGuide } from "@/components/interactive-voice-guide"
 
 interface ChatInterfaceProps {
   bot: Bot | null
@@ -21,11 +21,64 @@ function MessageBubble({
   message,
   isUser,
   botTitle,
+  onStartGuide,
 }: {
   message: ChatMessage
   isUser: boolean
   botTitle?: string
+  onStartGuide?: (type: string) => void
 }) {
+  const [isSpeaking, setIsSpeaking] = useState(false)
+  const voiceOutputRef = useRef<VoiceOutput | null>(null)
+
+  useEffect(() => {
+    if (!voiceOutputRef.current) {
+      voiceOutputRef.current = new VoiceOutput()
+    }
+  }, [])
+
+  // Detect if message mentions exercises
+  const detectExerciseType = () => {
+    const content = message.content.toLowerCase()
+    console.log("Checking message for exercise:", content)
+    if (content.includes("box breathing") || content.includes("breathing")) {
+      console.log("Detected: box-breathing")
+      return "box-breathing"
+    }
+    if (content.includes("neck") || content.includes("shoulder")) {
+      console.log("Detected: neck-relief")
+      return "neck-relief"
+    }
+    if (content.includes("deep breath")) {
+      console.log("Detected: deep-breathing")
+      return "deep-breathing"
+    }
+    console.log("No exercise detected")
+    return null
+  }
+
+  const exerciseType = !isUser ? detectExerciseType() : null
+  console.log("Exercise type:", exerciseType, "onStartGuide:", !!onStartGuide)
+
+  const handlePlayAudio = async () => {
+    if (!voiceOutputRef.current) return
+
+    if (isSpeaking) {
+      voiceOutputRef.current.stop()
+      setIsSpeaking(false)
+    } else {
+      try {
+        setIsSpeaking(true)
+        await voiceOutputRef.current.speak(message.content, 1.0, () => {
+          setIsSpeaking(false)
+        })
+      } catch (error) {
+        console.error("Error playing audio:", error)
+        setIsSpeaking(false)
+      }
+    }
+  }
+
   return (
     <div
       className={cn(
@@ -45,13 +98,50 @@ function MessageBubble({
       </div>
       <div
         className={cn(
-          "rounded-2xl px-4 py- text-sm leading-relaxed",
+          "rounded-2xl px-4 py-3 text-sm leading-relaxed",
           isUser
             ? "bg-primary text-primary-foreground rounded-tr-sm"
             : "bg-card border border-border text-card-foreground rounded-tl-sm"
         )}
       >
         <p className="whitespace-pre-wrap">{message.content}</p>
+        {!isUser && (
+          <div className="mt-2 flex gap-2 flex-wrap">
+            <button
+              onClick={handlePlayAudio}
+              className={cn(
+                "flex items-center gap-2 px-2 py-1 rounded text-xs font-medium transition-colors",
+                isSpeaking
+                  ? "bg-primary/20 text-primary"
+                  : "bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary"
+              )}
+              title={isSpeaking ? "Stop audio" : "Play audio"}
+            >
+              {isSpeaking ? (
+                <>
+                  <Volume2 className="w-3 h-3" />
+                  <span>Stop</span>
+                </>
+              ) : (
+                <>
+                  <VolumeOff className="w-3 h-3" />
+                  <span>Listen</span>
+                </>
+              )}
+            </button>
+            
+            {exerciseType && onStartGuide && (
+              <button
+                onClick={() => onStartGuide(exerciseType)}
+                className="flex items-center gap-2 px-2 py-1 rounded text-xs font-medium transition-colors bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/50"
+                title="Start interactive guided session"
+              >
+                <Play className="w-3 h-3" />
+                <span>Start Interactive Session</span>
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -144,6 +234,47 @@ export function ChatInterface({
   const [input, setInput] = useState("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const voiceOutputRef = useRef<VoiceOutput | null>(null)
+  const lastSpokenMessageRef = useRef<string>("")
+  const [showGuide, setShowGuide] = useState<string | null>(null)
+
+  // Initialize voice output
+  useEffect(() => {
+    if (!voiceOutputRef.current) {
+      voiceOutputRef.current = new VoiceOutput()
+    }
+  }, [])
+
+  // Auto-speak new bot messages (like Gemini Live / ChatGPT Live)
+  useEffect(() => {
+    if (messages.length === 0) return
+
+    const lastMessage = messages[messages.length - 1]
+    
+    // Only speak if it's a new bot message we haven't spoken yet
+    if (
+      lastMessage.role === "assistant" &&
+      lastMessage.content !== lastSpokenMessageRef.current &&
+      voiceOutputRef.current &&
+      !isLoading &&
+      !showGuide // Don't auto-speak if guide is active
+    ) {
+      lastSpokenMessageRef.current = lastMessage.content
+      
+      // Speak the new message automatically
+      voiceOutputRef.current.speak(lastMessage.content, 1.0).catch((error) => {
+        console.error("Error auto-speaking message:", error)
+      })
+    }
+  }, [messages, isLoading, showGuide])
+
+  // Stop speech when switching bots
+  useEffect(() => {
+    if (voiceOutputRef.current) {
+      voiceOutputRef.current.stop()
+      lastSpokenMessageRef.current = ""
+    }
+  }, [bot?.bot_id])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -156,13 +287,52 @@ export function ChatInterface({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (input.trim() && !isLoading) {
+      // Stop any ongoing speech when user sends new message
+      if (voiceOutputRef.current) {
+        voiceOutputRef.current.stop()
+      }
       onSendMessage(input.trim())
       setInput("")
     }
   }
 
+  const handleClearChat = () => {
+    // Stop speech and reset when clearing chat
+    if (voiceOutputRef.current) {
+      voiceOutputRef.current.stop()
+    }
+    lastSpokenMessageRef.current = ""
+    setShowGuide(null)
+    onClearChat()
+  }
+
+  const handleStartGuide = (type: string) => {
+    // Stop any ongoing speech
+    if (voiceOutputRef.current) {
+      voiceOutputRef.current.stop()
+    }
+    setShowGuide(type)
+  }
+
+  const handleGuideComplete = () => {
+    setShowGuide(null)
+  }
+
   return (
     <div className="flex-1 flex flex-col h-full bg-background">
+      {/* Show Interactive Guide Modal */}
+      {showGuide && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="relative max-w-4xl w-full mx-4">
+            <InteractiveVoiceGuide
+              exerciseType={showGuide as any}
+              onComplete={handleGuideComplete}
+              onCancel={handleGuideComplete}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-border bg-card/50">
         <div>
@@ -184,7 +354,7 @@ export function ChatInterface({
           <Button
             variant="ghost"
             size="sm"
-            onClick={onClearChat}
+            onClick={handleClearChat}
             className="text-muted-foreground hover:text-destructive"
           >
             <Trash2 className="w-4 h-4 mr-2" />
@@ -204,6 +374,7 @@ export function ChatInterface({
                 message={message}
                 isUser={message.role === "user"}
                 botTitle={bot?.title}
+                onStartGuide={handleStartGuide}
               />
               {/* Show search results after the last assistant message */}
               {message.role === "assistant" &&
