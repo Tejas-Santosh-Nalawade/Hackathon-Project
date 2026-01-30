@@ -383,74 +383,68 @@ git push origin main
 
 ## 📝 Tech Stack
 
+### **FRONTEND**
 ```
-┌──────────────────────────────────────────────────────────────┐
-│                         FRONTEND                              │
-├──────────────────────────────────────────────────────────────┤
-│  React 19 + TypeScript     │  UI Framework                   │
-│  Vite 7.2.4                │  Build Tool                     │
-│  Tailwind CSS              │  Styling                        │
-│  Radix UI (40+ components) │  Accessible UI                  │
-│  Web Speech API            │  Voice (TTS/STT)                │
-└──────────────────────────────────────────────────────────────┘
+React 19 + TypeScript    |  UI Framework
+Vite 7.2.4               |  Build Tool  
+Tailwind CSS             |  Styling
+Radix UI (40+)           |  Components
+Web Speech API           |  Voice (TTS/STT)
+```
 
-┌──────────────────────────────────────────────────────────────┐
-│                         BACKEND                               │
-├──────────────────────────────────────────────────────────────┤
-│  FastAPI + Python 3.11     │  Async Web Framework            │
-│  Groq API (llama-3.3-70b)  │  LLM Provider                   │
-│  JWT + Bcrypt              │  Authentication                 │
-│  DuckDuckGo Search         │  Web Search                     │
-│  Hash-based Embeddings     │  Memory (5MB only!)             │
-└──────────────────────────────────────────────────────────────┘
+### **BACKEND**
+```
+FastAPI + Python 3.11    |  Async Web Framework
+Groq API (llama-3.3-70b) |  LLM Provider
+JWT + Bcrypt             |  Authentication
+DuckDuckGo Search        |  Web Search
+Hash Embeddings          |  Memory (5MB only!)
+```
 
-┌──────────────────────────────────────────────────────────────┐
-│                       DEPLOYMENT                              │
-├──────────────────────────────────────────────────────────────┤
-│  Vercel (Frontend)         │  Free Tier                      │
-│  Render (Backend)          │  512MB Free Tier                │
-│  GitHub                    │  CI/CD                          │
-└──────────────────────────────────────────────────────────────┘
+### **DEPLOYMENT**
+```
+Vercel (Frontend)        |  Free Tier
+Render (Backend)         |  512MB Free Tier
+GitHub                   |  CI/CD
 ```
 
 ---
 
 ## 🤖 How Agents Work
 
+### **Example: "I need time management and exercise"**
+
+**Step 1: ROUTER**
 ```
-USER: "I need time management and exercise"
-  │
-  ▼
-┌─────────────────────────────────────────────────────────┐
-│ ⚙️  ROUTER: Analyzes intent → Scores agents            │
-│     PlanPal: 95 ✅  |  FitHer: 90 ✅  |  Others: <60 ❌  │
-└─────────────────────────────────────────────────────────┘
-  │
-  ▼
-┌─────────────────────────────────────────────────────────┐
-│ 📅 PLANPAL AGENT                                        │
-│  1. Checks memory: "User struggles with mornings"      │
-│  2. Creates schedule: 6:30 AM - 8:00 AM                │
-│  3. Asks FitHer for exercise help                      │
-└─────────────────────────────────────────────────────────┘
-  │
-  ▼
-┌─────────────────────────────────────────────────────────┐
-│ 💪 FITHER AGENT (Collaboration)                         │
-│  1. Gets context: "30-min morning exercise needed"     │
-│  2. Checks memory: "User has back pain"                │
-│  3. Suggests: Stretching + Yoga + Breathing            │
-└─────────────────────────────────────────────────────────┘
-  │
-  ▼
-┌─────────────────────────────────────────────────────────┐
-│ ✨ MERGED RESPONSE                                      │
-│  "Here's your morning routine:                         │
-│   6:30 AM - Wake up                                    │
-│   7:00 AM - Exercise (stretching + yoga for back)     │
-│   8:00 AM - Start work                                 │
-│   [Start Session] [Set Reminder]"                      │
-└─────────────────────────────────────────────────────────┘
+⚙️  Analyzes intent → Scores each agent
+    PlanPal: 95 ✅  |  FitHer: 90 ✅  |  Others: <60 ❌
+```
+
+**Step 2: PLANPAL AGENT**
+```
+📅 Primary Agent (Score: 95)
+   1. Checks memory: "User struggles with mornings"
+   2. Creates schedule: 6:30 AM - 8:00 AM
+   3. Asks FitHer for exercise help
+```
+
+**Step 3: FITHER AGENT**
+```
+💪 Collaboration Agent (Score: 90)
+   1. Gets context: "30-min morning exercise needed"
+   2. Checks memory: "User has back pain"
+   3. Suggests: Stretching + Yoga + Breathing
+```
+
+**Step 4: MERGED RESPONSE**
+```
+✨ Combined Answer to User:
+   "Here's your morning routine:
+    6:30 AM - Wake up
+    7:00 AM - Exercise (stretching + yoga for back)
+    8:00 AM - Start work
+    
+    [Start Session] [Set Reminder]"
 ```
 
 ### **Agent Scoring**
@@ -463,67 +457,87 @@ USER: "I need time management and exercise"
 │  Intent (LLM): 40 points                     │
 │  Memory:       30 points                     │
 │  ─────────────────────                       │
-│  Total:        100 points                    │
-├──────────────────────────────────────────────┤
-│  ≥ 80: Primary agent (responds)             │
-│  60-79: Collaborates                        │
-│  < 60: Skipped                              │
-└──────────────────────────────────────────────┘
+### **Agent Scoring System**
+
+**How Router Scores (0-100):**
+```
+Keywords:      30 points
+Intent (LLM):  40 points  
+Memory:        30 points
+───────────────────────
+Total:         100 points
+
+Routing Rules:
+  ≥ 80  →  Primary agent (responds)
+  60-79 →  Collaborates
+  < 60  →  Skipped
 ```
 
 ---
 
-## 🧠 Vector Memory System
+## 🧠 Vector Memory
 
-Each agent has its own **vector memory** to remember user context:
+**Each agent remembers your conversations:**
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│                 FITHER'S VECTOR MEMORY                    │
-├──────────────────────────────────────────────────────────┤
-│  Memory 1: "User has back pain from sitting"             │
-│    Vector: [0.21, 0.89, 0.45, ...] (64 dimensions)       │
-│    Timestamp: 2 days ago                                 │
-│                                                          │
-│  Memory 2: "User prefers 10-min quick exercises"        │
-│    Vector: [0.67, 0.12, 0.88, ...]                      │
-│    Timestamp: 5 days ago                                 │
-│                                                          │
-│  Memory 3: "User feels energetic in mornings"           │
-│    Vector: [0.34, 0.78, 0.23, ...]                      │
-│    Timestamp: 1 week ago                                 │
-└──────────────────────────────────────────────────────────┘
+FITHER'S MEMORY:
+─────────────────────────────────────────────────────
+Memory 1: "back pain from sitting"  | Vector: [0.21, 0.89, ...]
+Memory 2: "prefers 10-min exercise" | Vector: [0.67, 0.12, ...]
+Memory 3: "energetic in mornings"   | Vector: [0.34, 0.78, ...]
+─────────────────────────────────────────────────────
 
 New Query: "I want to exercise"
 Query Vector: [0.25, 0.85, 0.42, ...]
 
-Similarity Calculation (Cosine Similarity):
-• Memory 1: 0.92 (high match) ✅
-• Memory 2: 0.87 (high match) ✅
-• Memory 3: 0.45 (low match) ❌
+Similarity Match:
+  Memory 1: 0.92 ✅ High match
+  Memory 2: 0.87 ✅ High match  
+  Memory 3: 0.45 ❌ Low match
 
-Result: Agent recommends quick exercises focusing on back pain
+→ Agent recommends quick exercises for back pain
 ```
 
-### **How Embedding Works (Hash-based)**
-
-```python
-# Traditional ML Embeddings (400MB memory)
-"back pain" → [heavy ML model] → 384 dimensions
-
-# Our Hash-based Embeddings (5MB memory)
-"back pain" → [MD5 hash] → 64 dimensions
+**Why Hash-based Embeddings?**
 ```
+Traditional:  "back pain" → ML model (400MB) → 384 dimensions
+Our Approach: "back pain" → MD5 hash (5MB)  → 64 dimensions
 
-**Why Hash-based?**
-- ✅ 98% less memory (5MB vs 400MB)
-- ✅ 10x faster (no ML model loading)
-- ✅ Good enough for similarity matching
-- ✅ Fits in Render free tier (512MB)
+✅ 98% less memory  |  ✅ 10x faster  |  ✅ Fits free tier (512MB)
+```
 
 ---
 
 ## 📊 Dashboard Intelligence
+
+**Real-time metrics from agent memories (NOT fake data!):**
+
+```
+╔═══════════════════════════════════════════════════╗
+║  📈 YOUR HERSPACE DASHBOARD                       ║
+╠═══════════════════════════════════════════════════╣
+║  Total Conversations: 47                          ║
+║                                                   ║
+║  💪 FitHer: 12    📅 PlanPal: 8    🛡️ SpeakUp: 3  ║
+║  🚀 GrowthGuru: 15    💰 PaisaWise: 9             ║
+║                                                   ║
+║  🎯 Top Topics (from your chats):                 ║
+║     1. time management - 8 mentions               ║
+║     2. back pain - 6 mentions                     ║
+║     3. career growth - 5 mentions                 ║
+║                                                   ║
+║  💚 Wellness Score: 72/100                        ║
+║     Based on your FitHer activity                 ║
+║                                                   ║
+║  💡 Recommendations:                              ║
+║     • Haven't exercised in 3 days                 ║
+║     • 2 career resources waiting                  ║
+║     • Budget review due                           ║
+╚═══════════════════════════════════════════════════╝
+
+✅ Calculated from: Real chats + Agent memories + Activity patterns
+❌ NOT from: Hardcoded values or fake numbers
+```
 
 ```
 ┌───────────────────────────────────────────────────────┐
