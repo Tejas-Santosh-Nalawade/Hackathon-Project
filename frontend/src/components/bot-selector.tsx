@@ -62,20 +62,20 @@ export function BotSelector({
       {/* Logo - Larger and More Prominent */}
       <div className="p-6 pb-6 border-b border-sidebar-border bg-white flex-shrink-0">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl overflow-hidden bg-gradient-to-br from-[oklch(0.85_0.08_175)] to-[oklch(0.75_0.10_175)] p-0.5 shadow-lg ring-2 ring-primary/20">
-            <div className="w-full h-full bg-white rounded-xl p-1">
+          <div className="w-20 h-20 rounded-3xl overflow-hidden bg-gradient-to-br from-[oklch(0.85_0.08_175)] to-[oklch(0.75_0.10_175)] p-1 shadow-xl ring-2 ring-primary/30">
+            <div className="w-full h-full bg-white rounded-2xl p-1.5">
               <img
                 src="/logo.jpg"
                 alt="HerSpace Logo"
-                width={64}
-                height={64}
-                className="object-cover rounded-lg w-full h-full"
+                width={80}
+                height={80}
+                className="object-cover rounded-xl w-full h-full"
               />
             </div>
           </div>
           <div>
-            <span className="text-2xl font-bold text-primary tracking-tight block">HerSpace</span>
-            <span className="text-xs text-muted-foreground font-medium">Support Platform</span>
+            <span className="text-3xl font-bold text-primary tracking-tight block">HerSpace</span>
+            <span className="text-sm text-muted-foreground font-semibold">Support Platform</span>
           </div>
         </div>
       </div>

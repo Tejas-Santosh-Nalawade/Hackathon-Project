@@ -1,51 +1,70 @@
 import { AuthForm } from "@/components/auth-form"
+import { Sparkles, Heart, Shield } from "lucide-react"
 
 export default function AuthPage() {
   return (
-    <main className="min-h-screen bg-background flex flex-col lg:flex-row overflow-hidden">
+    <main className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 flex flex-col lg:flex-row overflow-hidden">
       {/* Left side - Branding & Message */}
-      <div className="lg:w-1/2 bg-linear-to-br from-[oklch(0.85_0.08_175)] to-[oklch(0.75_0.10_175)] p-6 lg:p-12 flex flex-col justify-between">
+      <div className="lg:w-1/2 bg-gradient-to-br from-purple-600 via-pink-500 to-rose-500 p-6 sm:p-8 lg:p-16 flex flex-col justify-between shadow-2xl min-h-[40vh] lg:min-h-screen">
         <div>
           {/* Logo */}
-          <div className="flex items-center gap-3 mb-20">
-            <div className="w-12 h-12 rounded-xl overflow-hidden bg-white p-1">
+          <div className="flex items-center gap-3 sm:gap-4 mb-10 sm:mb-16 lg:mb-24">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-2xl sm:rounded-3xl overflow-hidden bg-white shadow-xl p-1.5 sm:p-2 ring-2 sm:ring-4 ring-white/40">
               <img
                 src="/logo.jpg"
                 alt="HerSpace Logo"
-                width={48}
-                height={48}
-                className="object-cover rounded-lg"
+                width={96}
+                height={96}
+                className="object-cover rounded-xl sm:rounded-2xl"
               />
             </div>
-            <span className="text-2xl font-semibold text-white">HerSpace</span>
+            <span className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight drop-shadow-2xl">HerSpace</span>
           </div>
 
           {/* Main Message */}
-          <div className="mb-12">
-            <h1 className="font-serif text-4xl lg:text-5xl text-white leading-tight mb-6">
-              Your Space for Growth,
+          <div className="mb-8 sm:mb-12 lg:mb-16">
+            <h1 className="font-serif text-3xl sm:text-4xl lg:text-6xl text-white leading-tight mb-4 sm:mb-6 lg:mb-8 drop-shadow-xl">
+              Your Safe Space for
               <br />
-              <span className="italic">Wellness & Balance</span>
+              <span className="italic font-bold bg-gradient-to-r from-white via-pink-100 to-rose-100 bg-clip-text text-transparent">
+                Growth & Wellness
+              </span>
             </h1>
-            <p className="text-lg text-white/90 leading-relaxed">
-              Join thousands of working women who are discovering holistic support designed just for them. From wellness coaching to career growth, we're here for every moment.
+            <p className="text-lg sm:text-xl lg:text-2xl text-white font-medium leading-relaxed drop-shadow-lg mb-4 sm:mb-6 lg:mb-8">
+              Empowering working women with holistic support designed just for you.
             </p>
+            
+            {/* Feature Pills */}
+            <div className="flex flex-wrap gap-2 sm:gap-3 mt-4 sm:mt-6">
+              <div className="flex items-center gap-2 bg-white/20 backdrop-blur-md rounded-full px-3 sm:px-5 py-2 sm:py-2.5 border border-white/30">
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                <span className="text-white font-semibold text-sm sm:text-base">AI-Powered</span>
+              </div>
+              <div className="flex items-center gap-2 bg-white/20 backdrop-blur-md rounded-full px-3 sm:px-5 py-2 sm:py-2.5 border border-white/30">
+                <Heart className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="white" />
+                <span className="text-white font-semibold text-sm sm:text-base">Wellness</span>
+              </div>
+              <div className="flex items-center gap-2 bg-white/20 backdrop-blur-md rounded-full px-3 sm:px-5 py-2 sm:py-2.5 border border-white/30">
+                <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                <span className="text-white font-semibold text-sm sm:text-base">100% Private</span>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Social Proof */}
-        <div className="space-y-6">
-          <div className="bg-white/20 backdrop-blur rounded-2xl p-6">
-            <p className="text-white/90 text-sm italic mb-3">
-              "FitHer's gentle approach to wellness has made the biggest difference in my work-life balance. I finally feel supported."
+        <div className="space-y-4 hidden sm:block">
+          <div className="bg-white/25 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 border border-white/40 shadow-2xl">
+            <p className="text-white text-sm sm:text-base lg:text-lg italic mb-3 sm:mb-4 leading-relaxed font-medium">
+              "FitHer's gentle approach to wellness has transformed my work-life balance. I finally feel supported and understood."
             </p>
-            <p className="text-white font-medium">— Priya S., Product Manager</p>
+            <p className="text-white font-bold text-base sm:text-lg">— Priya S., Product Manager</p>
           </div>
         </div>
       </div>
 
       {/* Right side - Auth Form */}
-      <div className="lg:w-1/2 bg-background flex items-center justify-center p-6 lg:p-12">
+      <div className="lg:w-1/2 bg-white flex items-center justify-center p-4 sm:p-6 lg:p-16">
         <div className="w-full max-w-md">
           <AuthForm />
         </div>
