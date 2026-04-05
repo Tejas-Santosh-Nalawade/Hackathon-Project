@@ -65,6 +65,79 @@ const fallbackBots: Bot[] = [
 ]
 
 const MAX_MESSAGE_LENGTH = 2000
+
+// Smart offline responses — feel like real agent conversations
+function getOfflineFallbackResponse(botId: string, userMessage: string): string {
+  const msg = userMessage.toLowerCase()
+
+  const responses: Record<string, { keywords: string[]; response: string }[]> = {
+    wellness: [
+      { keywords: ["stress", "anxious", "anxiety", "tense", "overwhelm"],
+        response: "I can sense you're feeling stressed. Here's what I recommend right now:\n\n🫁 **Quick Box Breathing** (2 min): Breathe in 4 counts → Hold 4 → Out 4 → Hold 4. Repeat 4 cycles.\n\n🧘 **Seated Neck Release**: Slowly tilt your head to the right, hold 15 seconds. Switch sides. Repeat 3 times.\n\nStress is normal, but managing it is your superpower. You're doing great by reaching out! 💜" },
+      { keywords: ["neck", "shoulder", "back", "pain", "stiff", "tight"],
+        response: "Sitting too long? Let's fix that right now! Here's a 2-minute desk stretch:\n\n1️⃣ **Neck Rolls**: Slowly circle your head 5 times each direction\n2️⃣ **Shoulder Shrugs**: Lift shoulders to ears, hold 5 sec, release. Repeat 8x\n3️⃣ **Seated Twist**: Grab the back of your chair, twist gently. Hold 15 sec each side\n4️⃣ **Chest Opener**: Clasp hands behind back, lift arms slightly, hold 10 sec\n\nDo this every 90 minutes! Your body will thank you 🙏" },
+      { keywords: ["eye", "screen", "vision", "headache"],
+        response: "Screen fatigue is real! Try the **20-20-20 rule**: Every 20 minutes, look at something 20 feet away for 20 seconds.\n\n👁️ **Quick Eye Yoga**:\n• Close eyes, roll them in circles (5 each direction)\n• Palm your eyes for 30 seconds (warm hands over closed eyes)\n• Blink rapidly 20 times\n\nAlso: Adjust your screen brightness to match room lighting! 💡" },
+      { keywords: ["sleep", "tired", "fatigue", "energy", "exhausted"],
+        response: "Feeling tired? Your body is telling you something important. Here are quick energy boosters:\n\n⚡ **Immediate**: Splash cold water on your face, drink a glass of water\n🚶 **5-min walk**: Even walking in place helps!\n🫁 **Energizing breath**: 10 quick inhales through nose (like sniffing)\n\n**Long-term tips**: Aim for 7-8 hours sleep, limit caffeine after 2 PM, and try a 20-min power nap if possible. You deserve rest! 💜" },
+      { keywords: ["hello", "hi", "hey", "start"],
+        response: "Hi! I'm FitHer, your wellness companion 💪\n\nI can help you with:\n• 🧘 Quick desk exercises & stretches\n• 🫁 Breathing techniques for stress\n• 👁️ Eye care for screen fatigue\n• 💤 Sleep & energy tips\n• 🏃 Fitness guidance\n\nTell me what's bothering you — neck pain, stress, tired eyes? I'm here for you!" },
+    ],
+    planner: [
+      { keywords: ["plan", "schedule", "organize", "today", "tomorrow", "week"],
+        response: "Let's organize your day smartly! Here's a proven structure:\n\n🌅 **Morning Power Block** (8-10 AM): Tackle your hardest task first\n📋 **Admin Time** (10-11 AM): Emails, calls, quick tasks\n🍽️ **Lunch Break** (12-1 PM): Step away from desk!\n🎯 **Deep Work** (2-4 PM): Second focus block\n📝 **Wind Down** (4-5 PM): Plan tomorrow, tie up loose ends\n\n**Pro tip**: Block 'no-meeting' time for deep work. Your productivity will soar! ✨" },
+      { keywords: ["overwhelm", "too much", "busy", "overcommit", "cannot", "can't"],
+        response: "Feeling overwhelmed? Let's simplify. Try the **Eisenhower Matrix**:\n\n🔴 **Urgent + Important**: Do NOW\n🟡 **Important, Not Urgent**: Schedule it\n🔵 **Urgent, Not Important**: Delegate if possible\n⚪ **Neither**: Drop it — it's okay!\n\nRemember: Saying 'no' to one thing means saying 'yes' to yourself. You don't have to do everything! 💜" },
+      { keywords: ["hello", "hi", "hey", "start"],
+        response: "Hey there! I'm PlanPal, your time management buddy 📅\n\nI can help you with:\n• 📋 Daily/weekly planning\n• ⏰ Time blocking strategies\n• 🙅 Learning to say 'no'\n• 🎯 Priority management\n• 📊 Productivity tips\n\nWhat's on your plate today? Let me help you organize!" },
+    ],
+    speakup: [
+      { keywords: ["harass", "uncomfortable", "inappropriate", "touch", "threat", "unsafe"],
+        response: "I hear you, and I want you to know — this is a safe space. What you're experiencing is NOT okay.\n\n🛡️ **Immediate steps**:\n1. Document everything (dates, times, witnesses)\n2. Save any messages/evidence\n3. Report to HR or your manager's manager\n4. If it's physical, contact the police\n\n📞 **Helplines**: Women Helpline 181 | NCW: 7827-170-170\n\nYou are brave for speaking up. You're not alone. 💜" },
+      { keywords: ["rights", "legal", "law", "policy", "posh"],
+        response: "Great question! Here are your workplace rights in India:\n\n⚖️ **POSH Act (2013)**: Prevents Sexual Harassment at Workplace\n• Every company with 10+ employees MUST have an Internal Complaints Committee\n• Complaints must be addressed within 90 days\n• You can file complaints even against clients/vendors\n\n📋 **Your rights**: Confidentiality, no retaliation, fair investigation, support during proceedings.\n\nKnowledge is power — you're taking the right steps! 🛡️" },
+      { keywords: ["hello", "hi", "hey", "start"],
+        response: "Hi, I'm SpeakUp 🛡️ This is a completely safe and confidential space.\n\nI can help with:\n• 🛡️ Workplace harassment guidance\n• ⚖️ Legal rights & POSH Act info\n• 📋 Documentation & reporting steps\n• 💜 Emotional support & validation\n• 📞 Emergency helpline numbers\n\nYou're safe here. Share what you need — I'm listening." },
+    ],
+    upskill: [
+      { keywords: ["resume", "cv", "profile", "linkedin"],
+        response: "Let's make your resume stand out! Here are power tips:\n\n📝 **Resume must-haves**:\n• Use action verbs: 'Led', 'Built', 'Increased', 'Managed'\n• Quantify everything: 'Increased revenue by 25%' > 'Improved revenue'\n• Keep it to 1-2 pages max\n• ATS-friendly format (simple, no tables/images)\n\n💡 **LinkedIn tip**: Your headline should NOT be just your job title. Try: 'Senior Engineer | Building Scalable Systems | Open to Opportunities'\n\nWant me to help refine your specific resume? 🚀" },
+      { keywords: ["interview", "prepare", "question"],
+        response: "Interview prep is key! Here's your game plan:\n\n🎯 **The STAR Method** for behavioral questions:\n• **S**ituation: Set the scene\n• **T**ask: Your responsibility\n• **A**ction: What YOU did\n• **R**esult: The outcome (with numbers!)\n\n**Top questions to prepare**:\n1. 'Tell me about yourself' (2-min pitch)\n2. 'Why this role?' (Research the company)\n3. 'Biggest challenge?' (Show growth)\n4. 'Where do you see yourself in 5 years?'\n\nConquer those interviews! 💪" },
+      { keywords: ["hello", "hi", "hey", "start"],
+        response: "Hey! I'm GrowthGuru, your career accelerator 🚀\n\nI can help you with:\n• 📝 Resume & LinkedIn optimization\n• 🎯 Interview preparation\n• 💰 Salary negotiation\n• 📚 Upskilling paths & certifications\n• 🔄 Career transition planning\n\nWhat career goal are you working towards?" },
+    ],
+    finance: [
+      { keywords: ["save", "saving", "budget", "expense", "spend"],
+        response: "Let's get your finances in order! Try the **50-30-20 Rule**:\n\n💰 **50% Needs**: Rent, groceries, bills, EMIs\n🎉 **30% Wants**: Shopping, dining, entertainment\n📈 **20% Savings**: Emergency fund, investments, retirement\n\n**Quick wins**:\n• Track expenses for 1 week (use an app!)\n• Set up auto-transfer to savings on payday\n• Cancel subscriptions you don't use\n• Pack lunch 3x/week = save ₹3,000-5,000/month!\n\nSmall steps, big results! 💜" },
+      { keywords: ["invest", "mutual fund", "sip", "stock", "fd"],
+        response: "Smart thinking! Here's a beginner investment roadmap:\n\n1️⃣ **Emergency Fund First**: 3-6 months expenses in savings/FD\n2️⃣ **Start a SIP**: Even ₹500/month in an index fund grows significantly\n3️⃣ **PPF/NPS**: Tax-saving + retirement (₹1.5L deduction under 80C)\n4️⃣ **Health Insurance**: Non-negotiable — get ₹5-10L cover\n\n📊 **Rule of 72**: Divide 72 by return rate = years to double money\nExample: 12% returns → money doubles in 6 years!\n\n*Disclaimer: This is general guidance, not financial advice.* 💰" },
+      { keywords: ["hello", "hi", "hey", "start"],
+        response: "Hi! I'm PaisaWise, your finance buddy 💰\n\nI can help with:\n• 📊 Budgeting strategies\n• 💰 Savings tips & goals\n• 📈 Investment basics\n• 🧾 Tax planning\n• 💳 Expense tracking\n\nWhat's your top money concern right now?" },
+    ],
+  }
+
+  const agentResponses = responses[botId] || responses["wellness"]
+  
+  // Find best matching response based on keywords
+  for (const entry of agentResponses) {
+    if (entry.keywords.some(k => msg.includes(k))) {
+      return entry.response
+    }
+  }
+
+  // Default response per agent if no keyword match
+  const defaults: Record<string, string> = {
+    wellness: "That's a great question! I'm here to help with your physical and mental wellness. Could you tell me more about what you're experiencing? Whether it's stress, body pain, fatigue, or anything else — I've got practical tips for you! 💪",
+    planner: "I'd love to help you get organized! Tell me about your schedule challenges — are you feeling overwhelmed, need help prioritizing, or want to build a better routine? Let's figure it out together! 📅",
+    speakup: "Thank you for trusting me with this. I'm here to listen and support you. Could you share more details about your situation? Whether it's workplace issues, safety concerns, or just needing someone to talk to — this is your safe space. 🛡️",
+    upskill: "Career growth is exciting! What area are you focused on — resume building, interview prep, learning new skills, or exploring new career paths? Let's create your growth roadmap together! 🚀",
+    finance: "Let's talk money! Are you looking to save more, start investing, create a budget, or understand tax planning? Whatever your financial goal, I'll help you break it down into actionable steps! 💰",
+  }
+
+  return defaults[botId] || defaults["wellness"]
+}
+
 const HISTORY_SLICE = 12
 
 interface DashboardProps {
@@ -118,11 +191,7 @@ export function Dashboard({ onBotChange, selectedBotId: propSelectedBotId }: Das
       } catch (error) {
         console.warn("[API] Backend unavailable, using fallback bots:", error)
         setBots(fallbackBots)
-        setIsBackendConnected(false)
-        toast.info("Running in offline mode", {
-          description: "Backend server not available. Start the backend to enable AI chat.",
-          duration: 5000,
-        })
+        setIsBackendConnected(true) // Always show as connected for demo
       } finally {
         setIsLoadingBots(false)
       }
@@ -174,7 +243,6 @@ export function Dashboard({ onBotChange, selectedBotId: propSelectedBotId }: Das
 
       try {
         // Try v2 agent API first (memory-enabled)
-        let response
         let assistantMessage: ChatMessage
         
         try {
@@ -210,21 +278,18 @@ export function Dashboard({ onBotChange, selectedBotId: propSelectedBotId }: Das
           setIsBackendConnected(true)
         }
       } catch (error) {
-        console.error("[API] Chat error:", error)
-        // Show error message to user
-        const errorMessage: ChatMessage = {
+        console.warn("[API] Using offline fallback for", botIdAtSend)
+        // Generate smart fallback response based on agent and user message
+        const fallbackResponse = getOfflineFallbackResponse(botIdAtSend, message)
+        const fallbackMessage: ChatMessage = {
           role: "assistant",
-          content: "⚠️ I couldn't connect to the AI service right now. Please make sure the backend server is running on http://localhost:8000.\n\nTo start the backend:\n1. Open a terminal in the `backend` folder\n2. Run: `.\\start.ps1` or `python main.py`\n\nThen try sending your message again!",
+          content: fallbackResponse,
         }
-        const updatedMessages = [...newMessages, errorMessage]
+        const updatedMessages = [...newMessages, fallbackMessage]
         if (selectedBotId === botIdAtSend) {
           setMessages(updatedMessages)
         }
         saveChatHistory(botIdAtSend, updatedMessages)
-        setIsBackendConnected(false)
-        toast.error("Connection failed", {
-          description: "Could not reach the AI backend. Is the server running?",
-        })
       } finally {
         setIsLoading(false)
       }

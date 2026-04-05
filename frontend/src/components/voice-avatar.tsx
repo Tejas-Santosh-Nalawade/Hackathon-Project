@@ -8,6 +8,7 @@ import { GuidedSessionModal } from "@/components/guided-session-modal"
 import { getSessionsForBot, type GuidedSession } from "@/lib/guided-sessions"
 import type { Bot } from "@/lib/types"
 import { cn } from "@/lib/utils"
+import { AnimatedAvatar } from "@/components/animated-avatar"
 
 interface VoiceAvatarProps {
   bot: Bot | null
@@ -321,40 +322,23 @@ export function VoiceAvatar({ bot, onSendMessage }: VoiceAvatarProps) {
         )}
       </button>
       
-      {/* Avatar - Compact and Central */}
+      {/* Animated AI Avatar */}
       <div className="relative mb-2 md:mb-3">
-        {/* Animated Glow */}
-        <div
-          className={`absolute inset-0 bg-[oklch(0.85_0.08_175)] rounded-full blur-xl md:blur-2xl transition-all duration-1000 ${
-            isListening || isSpeaking ? "opacity-70 scale-110 animate-pulse" : "opacity-40 scale-100"
-          }`}
+        <AnimatedAvatar
+          isSpeaking={isSpeaking}
+          agentId={bot?.bot_id}
+          size="lg"
+          exerciseMode={null}
         />
 
-        {/* Avatar Image */}
-        <div className="relative w-28 h-28 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-2 md:border-4 border-white shadow-xl flex items-center justify-center bg-linear-to-br from-teal-100 to-blue-100">
-          <img
-            src="/avatar-ai.jpg"
-            alt={`${bot?.title || 'AI'} Voice Assistant`}
-            className="w-full h-full object-cover"
-          />
-
-          {/* Voice Activity Indicator */}
-          {isListening && (
-            <div className="absolute inset-0 bg-red-500/20 backdrop-blur-[1px] flex items-center justify-center">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full bg-red-500 flex items-center justify-center animate-pulse">
-                <Mic className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 text-white" />
-              </div>
+        {/* Listening overlay */}
+        {isListening && (
+          <div className="absolute inset-0 flex items-center justify-center z-20">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full bg-red-500/80 flex items-center justify-center animate-pulse shadow-lg">
+              <Mic className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 text-white" />
             </div>
-          )}
-
-          {isSpeaking && (
-            <div className="absolute inset-0 bg-[oklch(0.85_0.08_175)]/30 backdrop-blur-[1px] flex items-center justify-center">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full bg-[oklch(0.50_0.15_175)] flex items-center justify-center animate-pulse">
-                <Volume2 className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 text-white" />
-              </div>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Status Text */}

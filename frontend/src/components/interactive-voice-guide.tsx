@@ -191,7 +191,7 @@ export function InteractiveVoiceGuide({
       <div className="text-center mb-8">
         <div className="flex items-center justify-center gap-4 mb-4">
           {/* Animated Speaking Avatar */}
-          <SpeakingAvatar isSpeaking={isSpeaking} size="lg" />
+          <SpeakingAvatar isSpeaking={isSpeaking} size="lg" agentId="wellness" />
         </div>
         
         <div className="flex items-center justify-center gap-2 mb-2">

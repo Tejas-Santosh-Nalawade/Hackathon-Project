@@ -98,7 +98,7 @@ export function ChatPanel({
       voiceOutputRef.current &&
       !isLoading &&
       !showGuide &&
-      bot?.bot_id // Make sure we have a bot context
+      bot?.bot_id
     ) {
       // Create a unique key for this message in this bot context
       const messageKey = `${bot.bot_id}-${lastMessage.content}`
@@ -106,9 +106,17 @@ export function ChatPanel({
       if (messageKey !== lastSpokenMessageRef.current) {
         lastSpokenMessageRef.current = messageKey
         
-        voiceOutputRef.current.speak(lastMessage.content, 1.25).catch((error) => {
-          console.error("Error auto-speaking message:", error)
-        })
+        // ALWAYS cancel any ongoing speech before starting new
+        voiceOutputRef.current.stop()
+        
+        // Small delay to let cancel complete, then speak
+        setTimeout(() => {
+          if (voiceOutputRef.current) {
+            voiceOutputRef.current.speak(lastMessage.content, 1.1).catch((error) => {
+              console.error("Error auto-speaking message:", error)
+            })
+          }
+        }, 100)
       }
     }
   }, [messages, isLoading, showGuide, bot?.bot_id])
@@ -333,7 +341,7 @@ export function ChatPanel({
                     <div className="shrink-0 ml-3 relative" style={{ minWidth: '60px' }}>
                       <div className="absolute -inset-2 rounded-full border-4 border-purple-500 animate-ping opacity-75" style={{ animationDuration: '1.5s' }} />
                       <div className="relative z-10">
-                        <SpeakingAvatar isSpeaking={true} size="sm" />
+                        <SpeakingAvatar isSpeaking={true} size="sm" agentId={bot?.bot_id} />
                       </div>
                     </div>
                   )}

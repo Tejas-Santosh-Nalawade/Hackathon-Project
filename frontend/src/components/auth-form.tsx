@@ -152,7 +152,7 @@ export function AuthForm() {
       </div>
 
       {/* Google OAuth - Prominent at Top */}
-      <div className="mb-8">
+      <div className="mb-6">
         <div className="bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 p-4 sm:p-6 rounded-2xl border-2 border-purple-200/50 shadow-lg hover:shadow-xl transition-shadow">
           <p className="text-center text-sm sm:text-base font-bold text-purple-700 mb-4 flex items-center justify-center gap-2">
             <Sparkles className="w-4 h-4 text-pink-500" />
@@ -176,8 +176,40 @@ export function AuthForm() {
         </div>
       </div>
 
+      {/* Demo Login - For Hackathon Demo */}
+      <div className="mb-6">
+        <button
+          type="button"
+          onClick={() => {
+            // Save demo auth data directly to localStorage
+            const demoUser = {
+              user_id: "demo_user_001",
+              email: "demo@herspace.ai",
+              name: "Priya (Demo)",
+              auth_provider: "demo",
+              created_at: new Date().toISOString(),
+              preferences: {},
+              agent_interactions: {},
+            }
+            localStorage.setItem("auth_token", "demo_token_herspace_2026")
+            localStorage.setItem("user_profile", JSON.stringify(demoUser))
+            localStorage.setItem("user", JSON.stringify({ name: demoUser.name, id: demoUser.user_id }))
+            toast({
+              title: "Welcome, Priya! 💜",
+              description: "Demo mode activated — explore all 5 AI agents!",
+            })
+            navigate("/")
+          }}
+          className="w-full h-14 text-lg font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] flex items-center justify-center gap-3 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-600 hover:via-teal-600 hover:to-cyan-600 text-white border-2 border-emerald-400/30"
+        >
+          <span className="text-xl">⚡</span>
+          <span>Try Demo Instantly</span>
+          <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">No sign-up needed</span>
+        </button>
+      </div>
+
       {/* Divider */}
-      <div className="flex items-center gap-4 my-8">
+      <div className="flex items-center gap-4 my-6">
         <div className="h-0.5 bg-gradient-to-r from-transparent via-purple-300 to-transparent flex-1" />
         <span className="text-base text-gray-600 font-semibold">or use email</span>
         <div className="h-0.5 bg-gradient-to-r from-transparent via-pink-300 to-transparent flex-1" />

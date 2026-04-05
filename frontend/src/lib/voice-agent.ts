@@ -138,46 +138,93 @@ export class VoiceOutput {
   }
 
   speak(text: string, rate: number = 0.75, onEnd?: () => void): Promise<void> {
-    return new Promise((resolve, reject) => {
-      // Cancel any current speech
-      if (this.currentUtterance) {
-        this.synthesis.cancel()
-      }
+    return new Promise<void>((resolve) => {
+      // Cancel any current speech first
+      this.synthesis.cancel()
+      this.currentUtterance = null
 
-      this.currentUtterance = new SpeechSynthesisUtterance(text)
-      this.currentUtterance.rate = rate // Slower, human-like pace
-      this.currentUtterance.pitch = 1.0
-      this.currentUtterance.volume = 1.0
+      // Chrome bug fix: SpeechSynthesis gets stuck on long text
+      // Split into sentences and speak one at a time
+      const sentences = text.match(/[^.!?]+[.!?]+/g) || [text]
+      let currentIndex = 0
+      let keepAliveTimer: ReturnType<typeof setInterval> | null = null
 
-      if (this.voice) {
-        this.currentUtterance.voice = this.voice
-      }
-
-      this.currentUtterance.onstart = () => {
-        this.isSpeaking = true
-        if (this.onSpeakingChangeCallback) {
-          this.onSpeakingChangeCallback(true)
+      const speakNext = () => {
+        if (currentIndex >= sentences.length) {
+          // All sentences spoken — done
+          this.isSpeaking = false
+          if (keepAliveTimer) clearInterval(keepAliveTimer)
+          if (this.onSpeakingChangeCallback) {
+            this.onSpeakingChangeCallback(false)
+          }
+          window.dispatchEvent(new CustomEvent("herspace-speak-end"))
+          if (onEnd) onEnd()
+          resolve()
+          return
         }
+
+        const sentence = sentences[currentIndex].trim()
+        if (!sentence) {
+          currentIndex++
+          speakNext()
+          return
+        }
+
+        this.currentUtterance = new SpeechSynthesisUtterance(sentence)
+        this.currentUtterance.rate = rate
+        this.currentUtterance.pitch = 1.0
+        this.currentUtterance.volume = 1.0
+
+        if (this.voice) {
+          this.currentUtterance.voice = this.voice
+        }
+
+        this.currentUtterance.onstart = () => {
+          this.isSpeaking = true
+          if (this.onSpeakingChangeCallback) {
+            this.onSpeakingChangeCallback(true)
+          }
+          if (currentIndex === 0) {
+            window.dispatchEvent(new CustomEvent("herspace-speak-start"))
+          }
+
+          // Chrome keep-alive: prevents speech from freezing on long text
+          if (keepAliveTimer) clearInterval(keepAliveTimer)
+          keepAliveTimer = setInterval(() => {
+            if (this.synthesis.speaking && !this.synthesis.paused) {
+              this.synthesis.pause()
+              this.synthesis.resume()
+            }
+          }, 10000)
+        }
+
+        // Word boundary event for real lip sync
+        this.currentUtterance.onboundary = (event) => {
+          if (event.name === "word") {
+            const word = sentence.substring(event.charIndex, event.charIndex + event.charLength)
+            const vowels = (word.match(/[aeiouAEIOU]/g) || []).length
+            const openness = Math.min(0.4 + vowels * 0.2, 1.0)
+            window.dispatchEvent(new CustomEvent("herspace-speak-word", {
+              detail: { word, openness, charIndex: event.charIndex }
+            }))
+          }
+        }
+
+        this.currentUtterance.onend = () => {
+          currentIndex++
+          // Brief pause between sentences for natural conversational flow
+          setTimeout(speakNext, 150)
+        }
+
+        this.currentUtterance.onerror = () => {
+          currentIndex++
+          setTimeout(speakNext, 100)
+        }
+
+        this.synthesis.speak(this.currentUtterance)
       }
 
-      this.currentUtterance.onend = () => {
-        this.isSpeaking = false
-        if (this.onSpeakingChangeCallback) {
-          this.onSpeakingChangeCallback(false)
-        }
-        if (onEnd) onEnd()
-        resolve()
-      }
-      
-      this.currentUtterance.onerror = (error) => {
-        this.isSpeaking = false
-        if (this.onSpeakingChangeCallback) {
-          this.onSpeakingChangeCallback(false)
-        }
-        reject(error)
-      }
-
-      this.synthesis.speak(this.currentUtterance)
+      speakNext()
     })
   }
 
@@ -189,6 +236,8 @@ export class VoiceOutput {
     if (this.onSpeakingChangeCallback) {
       this.onSpeakingChangeCallback(false)
     }
+    // Always dispatch end event so avatar closes mouth
+    window.dispatchEvent(new CustomEvent("herspace-speak-end"))
   }
 
   pause() {

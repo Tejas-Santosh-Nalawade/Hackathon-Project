@@ -294,6 +294,13 @@ async def chat(request: ChatRequest):
             error_type = type(e).__name__
             error_msg = str(e).lower()
 
+            # DETAILED ERROR LOGGING
+            print(f"\n{'='*60}")
+            print(f"[ERROR] Model '{model}' FAILED for bot_id='{request.bot_id}'")
+            print(f"[ERROR] Exception type: {error_type}")
+            print(f"[ERROR] Full error: {e}")
+            print(f"{'='*60}\n")
+
             # Check if it's a 429 rate limit error
             is_rate_limit = (
                 "429" in error_msg
@@ -307,8 +314,13 @@ async def chat(request: ChatRequest):
                 print(f"[MODEL] Rate limit hit on {model}, trying next model...")
                 continue
 
-            # If not a rate limit error, or it's the last model, handle the error
-            print(f"[ERROR] Groq API failed for bot_id={request.bot_id}: {error_type}")
+            # If it's not the last model, try the next one regardless
+            if i < len(MODEL_PRIORITY) - 1:
+                print(f"[MODEL] Trying next model...")
+                continue
+
+            # If we're on the last model, handle the error
+            print(f"[ERROR] ALL MODELS FAILED for bot_id={request.bot_id}")
 
             # Content moderation errors
             if "content" in error_msg and "filter" in error_msg:
@@ -429,10 +441,15 @@ async def chat_with_agent(agent_name: str, request: AgentChatRequest):
         )
     
     except Exception as e:
-        print(f"Error in agent chat: {e}")
+        import traceback
+        print(f"\n{'='*60}")
+        print(f"[ERROR] Agent '{agent_name}' chat failed:")
+        print(f"[ERROR] {type(e).__name__}: {e}")
+        traceback.print_exc()
+        print(f"{'='*60}\n")
         raise HTTPException(
             status_code=500,
-            detail={"error": "Failed to generate response", "code": "AGENT_ERROR"}
+            detail={"error": f"Agent error: {str(e)}", "code": "AGENT_ERROR"}
         )
 
 
