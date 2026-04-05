@@ -18,7 +18,7 @@ export function AvatarPanel({ bot, lastMessage, onQuickAction }: AvatarPanelProp
   // Default message when no chat has happened - enhanced for wellness avatar
   const displayMessage = lastMessage || 
     (bot?.bot_id === "finance" 
-      ? "Namaste, Priya. I'm PaisaWise. Let's look at your savings goals for this month."
+      ? "Namaste, Tejas. I'm PaisaWise. Let's look at your savings goals for this month."
       : bot?.bot_id === "wellness"
       ? "Hi! I'm FitHer, your desk wellness companion. I've got you covered with sitting exercises, breathing techniques, and stress relief—all without leaving your chair. Ready for a quick 2-minute stretch?"
       : bot?.bot_id === "planner"

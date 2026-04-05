@@ -113,7 +113,7 @@ class DashboardService:
             insights.append("Your support team is ready to help you thrive 💪")
         
         return {
-            "greeting": "Good afternoon, Priya",
+            "greeting": "Good afternoon, Tejas",
             "insights": insights,
             "time_of_day": self._get_time_of_day()
         }
