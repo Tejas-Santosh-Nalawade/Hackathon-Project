@@ -1,9 +1,18 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   Calendar,
   Clock,
@@ -21,7 +30,18 @@ import {
   GraduationCap,
   Sparkles,
   BarChart3,
+  Menu,
+  User,
+  Settings,
+  LogOut,
+  MessageSquare,
+  ShieldCheck,
+  Dumbbell,
+  Wallet,
+  Rocket,
 } from "lucide-react"
+import { getUserProfile, logout, fetchDashboard, type DashboardData } from "@/lib/api"
+import { AgentTabs } from "./agent-tabs"
 
 // Mock data - would come from user profile and APIs
 const upcomingEvents = [
@@ -175,832 +195,328 @@ const todaySchedule = [
 interface PersonalizedDashboardProps {
   botId?: string
   onBotChange?: (botId: string) => void
+  standalone?: boolean
 }
 
-export function PersonalizedDashboard({ botId = "wellness", onBotChange }: PersonalizedDashboardProps) {
+export function PersonalizedDashboard({ botId = "wellness", onBotChange, standalone = false }: PersonalizedDashboardProps) {
   const navigate = useNavigate()
-  const [selectedDate] = useState(new Date())
+  // Local active agent — clicking a card updates this WITHOUT navigating away
+  const [activeBot, setActiveBot] = useState<string>(botId)
   const [enrolledCourses, setEnrolledCourses] = useState<number[]>([])
   const [markedTasks, setMarkedTasks] = useState<number[]>([])
-  const userName = "Priya"
-  
-  const handleBotClick = (selectedBotId: string) => {
-    onBotChange?.(selectedBotId)
-    // Navigate to home page with selected bot
-    navigate("/", { state: { botId: selectedBotId } })
+  const [dashboard, setDashboard] = useState<DashboardData | null>(null)
+  const [loadingDash, setLoadingDash] = useState(true)
+
+  // Sync if parent changes botId
+  useEffect(() => { setActiveBot(botId) }, [botId])
+
+  const userProfile = getUserProfile()
+  const userName = userProfile?.name || "User"
+  const userEmail = userProfile?.email || ""
+  const userInitials = userName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
+
+  useEffect(() => {
+    fetchDashboard()
+      .then(setDashboard)
+      .catch(() => setDashboard({
+        wellness: { score: 70, status: "Doing okay", trend: "stable", agent: "FitHer" },
+        planner:  { tasks_done: 0, tasks_total: 11, progress: 0, status: "Let's plan", agent: "PlanPal" },
+        finance:  { savings_goal: 50, status: "Let's start", agent: "PaisaWise" },
+        safety:   { alerts: 0, priority: "low", status: "All clear", agent: "SpeakUp" },
+        career:   { growth_score: 50, status: "Ready to start", agent: "GrowthGuru" },
+        generated_at: new Date().toISOString(),
+      }))
+      .finally(() => setLoadingDash(false))
+  }, [])
+
+  const handleLogout = async () => { await logout(); navigate("/auth") }
+  // Clicking an agent card just switches the view — no navigation
+  const handleBotClick = (id: string) => {
+    setActiveBot(id)
+    onBotChange?.(id)
   }
-  
-  const handleStartBot = () => {
-    // Navigate to home page with current bot
-    navigate("/", { state: { botId } })
-  }
-  
+  // "Chat with X" button actually opens the chat
+  const handleStartBot = () => navigate("/", { state: { botId: activeBot } })
+
   const handleEnrollCourse = (courseId: number) => {
     if (!enrolledCourses.includes(courseId)) {
       setEnrolledCourses([...enrolledCourses, courseId])
       alert(`✅ Successfully enrolled in course! Check your email for next steps.`)
     }
   }
-  
   const handleLearnMore = (title: string) => {
     alert(`📚 ${title}\n\nThis feature will open a detailed view with:\n✓ Complete course curriculum\n✓ Instructor profile\n✓ Student reviews\n✓ Pricing options\n✓ Certification details\n\nComing soon!`)
   }
-  
   const handleMarkDone = (taskIdx: number) => {
-    if (!markedTasks.includes(taskIdx)) {
-      setMarkedTasks([...markedTasks, taskIdx])
-    }
+    if (!markedTasks.includes(taskIdx)) setMarkedTasks([...markedTasks, taskIdx])
   }
+
+  const hour = new Date().getHours()
+  const timeGreeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening"
+
+  const agents = [
+    {
+      id: "wellness", name: "FitHer", emoji: "💪", desc: "Wellness & fitness",
+      color: "text-amber-600", border: "border-amber-300", bg: "bg-amber-50",
+      score: dashboard ? `${dashboard.wellness.score}/100` : "—",
+      status: dashboard?.wellness.status ?? "…",
+      badge: dashboard?.wellness.trend === "improving" ? "📈 Improving" : dashboard?.wellness.trend === "needs_attention" ? "⚠️ Needs care" : "➡️ Stable",
+      cta: "Chat with FitHer",
+    },
+    {
+      id: "planner", name: "PlanPal", emoji: "📅", desc: "Master your time",
+      color: "text-blue-600", border: "border-blue-300", bg: "bg-blue-50",
+      score: dashboard ? `${dashboard.planner.tasks_done}/${dashboard.planner.tasks_total} tasks` : "—",
+      status: dashboard?.planner.status ?? "…",
+      badge: dashboard && dashboard.planner.progress >= 80 ? "🎯 Almost done" : dashboard && dashboard.planner.progress >= 50 ? "💪 Good progress" : "📋 Let's plan",
+      cta: "Chat with PlanPal",
+    },
+    {
+      id: "speakup", name: "SpeakUp", emoji: "🛡️", desc: "Harassment & safety",
+      color: "text-sky-600", border: "border-sky-300", bg: "bg-sky-50",
+      score: dashboard ? (dashboard.safety.alerts > 0 ? `${dashboard.safety.alerts} alert${dashboard.safety.alerts > 1 ? "s" : ""}` : "All clear") : "—",
+      status: dashboard?.safety.status ?? "…",
+      badge: dashboard?.safety.priority === "high" ? "🔴 High priority" : dashboard?.safety.priority === "medium" ? "🟡 Monitoring" : "🟢 All clear",
+      cta: "Talk to SpeakUp",
+    },
+    {
+      id: "upskill", name: "GrowthGuru", emoji: "🚀", desc: "Career coach",
+      color: "text-rose-600", border: "border-rose-300", bg: "bg-rose-50",
+      score: dashboard ? `${dashboard.career.growth_score}/100` : "—",
+      status: dashboard?.career.status ?? "…",
+      badge: dashboard && dashboard.career.growth_score >= 80 ? "🚀 Actively growing" : dashboard && dashboard.career.growth_score >= 60 ? "📈 On the path" : "🌱 Ready to start",
+      cta: "Chat with GrowthGuru",
+    },
+    {
+      id: "finance", name: "PaisaWise", emoji: "💰", desc: "Finance helper",
+      color: "text-orange-600", border: "border-orange-300", bg: "bg-orange-50",
+      score: dashboard ? `${dashboard.finance.savings_goal}%` : "—",
+      status: dashboard?.finance.status ?? "…",
+      badge: dashboard && dashboard.finance.savings_goal >= 75 ? "✅ On track" : dashboard && dashboard.finance.savings_goal >= 50 ? "📊 Making progress" : "💡 Let's plan",
+      cta: "Chat with PaisaWise",
+    },
+  ]
+
+  const activeAgent = agents.find((a) => a.id === activeBot) ?? agents[0]
+
+  const quickStats = [
+    {
+      label: "Wellness Score", botId: "wellness",
+      value: loadingDash ? "…" : `${dashboard?.wellness.score ?? 70}%`,
+      sub: dashboard?.wellness.status ?? "Doing okay", subColor: "text-green-600",
+      icon: <Heart className="w-7 h-7 text-pink-600" />,
+      iconBg: "from-pink-200 to-rose-200", border: "border-pink-200",
+      card: "from-pink-50 via-rose-50 to-white", valueColor: "text-pink-600",
+    },
+    {
+      label: "Tasks Today", botId: "planner",
+      value: loadingDash ? "…" : `${dashboard?.planner.tasks_done ?? 0}/${dashboard?.planner.tasks_total ?? 11}`,
+      sub: dashboard?.planner.status ?? "Let's plan", subColor: "text-blue-600",
+      icon: <CheckCircle2 className="w-7 h-7 text-purple-600" />,
+      iconBg: "from-purple-200 to-blue-200", border: "border-purple-200",
+      card: "from-purple-50 to-white", valueColor: "text-purple-600",
+    },
+    {
+      label: "Savings Goal", botId: "finance",
+      value: loadingDash ? "…" : `${dashboard?.finance.savings_goal ?? 50}%`,
+      sub: dashboard?.finance.status ?? "Let's start", subColor: "text-green-600",
+      icon: <TrendingUp className="w-7 h-7 text-rose-600" />,
+      iconBg: "from-rose-200 to-orange-200", border: "border-rose-200",
+      card: "from-rose-50 via-pink-50 to-white", valueColor: "text-rose-600",
+    },
+    {
+      label: "Career Growth", botId: "upskill",
+      value: loadingDash ? "…" : `${dashboard?.career.growth_score ?? 50}/100`,
+      sub: dashboard?.career.status ?? "Ready to start", subColor: "text-orange-600",
+      icon: <Rocket className="w-7 h-7 text-orange-600" />,
+      iconBg: "from-orange-200 to-amber-200", border: "border-orange-200",
+      card: "from-orange-50 to-white", valueColor: "text-orange-600",
+    },
+  ]
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="p-6 space-y-6">
-      
-      {/* Agent Selector */}
+      {standalone && (
+        <header className="sticky top-0 z-30 flex items-center justify-between px-4 py-3 border-b bg-white/90 backdrop-blur-sm">
+          <button
+            onClick={() => navigate("/")}
+            className="flex items-center gap-2 focus:outline-none"
+            aria-label="Back to chat"
+          >
+            <Menu className="w-5 h-5 text-muted-foreground" />
+            <span className="text-base font-bold text-primary">HerSpace</span>
+          </button>
+
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+              <Bell className="w-4 h-4" />
+            </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-1.5 hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary/30 rounded-full">
+                  <Avatar className="w-8 h-8">
+                    <AvatarFallback className="bg-[oklch(0.85_0.08_175)] text-[oklch(0.35_0.05_175)] text-sm font-semibold">
+                      {userInitials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="hidden sm:block text-sm font-medium text-foreground pr-1">
+                    {userName.split(" ")[0]}
+                  </span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-60">
+                <DropdownMenuLabel>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-semibold text-sm">{userName}</span>
+                    <span className="text-xs text-muted-foreground font-normal">{userEmail}</span>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate("/analytics")}>
+                  <BarChart3 className="mr-2 h-4 w-4" />
+                  <span>Analytics</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/dashboard")}>
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profile Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Preferences</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Logout</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </header>
+      )}
+
+      <div className="p-4 sm:p-6 space-y-5">
+
+      {/* ── Agent Selector — all 5 with live scores ── */}
       <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-3 md:p-4 border-2 border-purple-200 shadow-md">
-        <h2 className="text-xs md:text-sm font-semibold text-purple-900 mb-2 md:mb-3">MY SUPPORT TEAM</h2>
+        <h2 className="text-xs md:text-sm font-semibold text-purple-900 mb-3">MY SUPPORT TEAM</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 md:gap-3">
-          {[
-            { id: "wellness", name: "FitHer", emoji: "💪", desc: "Wellness & fitness" },
-            { id: "planner", name: "PlanPal", emoji: "📅", desc: "Master your time" },
-            { id: "speakup", name: "SpeakUp", emoji: "🛡️", desc: "Harassment & safety" },
-            { id: "upskill", name: "GrowthGuru", emoji: "🚀", desc: "Career coach" },
-            { id: "finance", name: "PaisaWise", emoji: "💰", desc: "Finance helper" },
-          ].map((agent) => (
-            <button
-              key={agent.id}
-              onClick={() => handleBotClick(agent.id)}
-              className={`p-2 md:p-3 rounded-xl text-left transition-all ${
-                botId === agent.id
-                  ? "bg-pink-100 border-2 border-pink-400 shadow-lg scale-105"
-                  : "bg-white border border-gray-200 hover:border-purple-300 hover:shadow-md"
-              }`}
-            >
-              <div className="text-xl md:text-2xl mb-1">{agent.emoji}</div>
-              <p className="font-semibold text-xs md:text-sm text-gray-900">{agent.name}</p>
-              <p className="text-[10px] md:text-xs text-gray-600 line-clamp-1">{agent.desc}</p>
-            </button>
-          ))}
+          {agents.map((agent) => {
+            const isActive = activeBot === agent.id
+            return (
+              <button
+                key={agent.id}
+                onClick={() => handleBotClick(agent.id)}
+                className={`p-2 md:p-3 rounded-xl text-left transition-all duration-200 group relative ${
+                  isActive
+                    ? `${agent.bg} border-2 ${agent.border} shadow-lg scale-105`
+                    : "bg-white border border-gray-200 hover:border-purple-300 hover:shadow-md"
+                }`}
+              >
+                <div className="text-xl md:text-2xl mb-1">{agent.emoji}</div>
+                <p className={`font-semibold text-xs md:text-sm ${isActive ? agent.color : "text-gray-900"}`}>
+                  {agent.name}
+                </p>
+                <p className="text-[10px] md:text-xs text-gray-500 line-clamp-1 mb-1">{agent.desc}</p>
+                <div className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full inline-block ${
+                  isActive ? `${agent.color} ${agent.bg}` : "text-gray-500 bg-gray-100"
+                }`}>
+                  {loadingDash ? "…" : agent.score}
+                </div>
+                <div className={`mt-1 flex items-center gap-1 text-[10px] font-medium opacity-0 group-hover:opacity-100 transition-opacity ${agent.color}`}>
+                  <MessageSquare className="w-2.5 h-2.5" />
+                  Chat now
+                </div>
+              </button>
+            )
+          })}
         </div>
       </div>
-      
-      {/* Welcome Header with Avatar Greeting */}
-      <div className="flex flex-col md:flex-row items-start justify-between bg-gradient-to-r from-pink-100 via-purple-100 to-rose-100 p-4 md:p-6 rounded-2xl md:rounded-3xl border-2 border-pink-200 shadow-lg gap-4">
+
+      {/* ── Welcome Banner — dynamic per active agent ── */}
+      <div className={`flex flex-col md:flex-row items-start justify-between p-4 md:p-6 rounded-2xl border-2 shadow-lg gap-4 transition-all duration-300 ${
+        activeBot === "wellness" ? "bg-gradient-to-r from-amber-50 via-orange-50 to-yellow-50 border-amber-200" :
+        activeBot === "planner"  ? "bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border-blue-200" :
+        activeBot === "speakup"  ? "bg-gradient-to-r from-sky-50 via-cyan-50 to-teal-50 border-sky-200" :
+        activeBot === "upskill"  ? "bg-gradient-to-r from-rose-50 via-pink-50 to-fuchsia-50 border-rose-200" :
+        "bg-gradient-to-r from-orange-50 via-amber-50 to-yellow-50 border-orange-200"
+      }`}>
         <div className="flex-1">
-          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-pink-600 via-purple-600 to-rose-600 bg-clip-text text-transparent mb-2">
-            {botId === "wellness" && "Good afternoon, " + userName + "! 💝"}
-            {botId === "planner" && "Welcome back, " + userName + "! 📅"}
-            {botId === "speakup" && "You're safe here, " + userName + " 🛡️"}
-            {botId === "upskill" && "Ready to grow, " + userName + "! 🚀"}
-            {botId === "finance" && "Let's build wealth, " + userName + "! 💰"}
+          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-pink-600 via-purple-600 to-rose-600 bg-clip-text text-transparent mb-1">
+            {timeGreeting}, {userName}! {activeAgent.emoji}
           </h1>
-          <p className="text-sm md:text-base lg:text-lg text-gray-700">
-            {botId === "wellness" && (
+          <p className="text-sm md:text-base text-gray-700 mb-1">
+            {!loadingDash && dashboard ? (
               <>
-                You have <span className="font-semibold text-pink-600">3 wellness sessions</span> and{" "}
-                <span className="font-semibold text-rose-600">2 energy tips</span> today
+                {activeBot === "wellness" && <><span className="font-semibold text-pink-600">{dashboard.wellness.score}/100</span> wellness score · <span className="font-semibold text-rose-600">{dashboard.wellness.status}</span></>}
+                {activeBot === "planner" && <><span className="font-semibold text-blue-600">{dashboard.planner.tasks_done}/{dashboard.planner.tasks_total} tasks</span> done today · <span className="font-semibold text-purple-600">{dashboard.planner.status}</span></>}
+                {activeBot === "speakup" && <>Safety: <span className="font-semibold text-sky-600">{dashboard.safety.status}</span> · Your conversations are <span className="font-semibold text-green-600">private & secure</span></>}
+                {activeBot === "upskill" && <>Career growth: <span className="font-semibold text-rose-600">{dashboard.career.growth_score}/100</span> · <span className="font-semibold text-purple-600">{dashboard.career.status}</span></>}
+                {activeBot === "finance" && <>Savings goal: <span className="font-semibold text-green-600">{dashboard.finance.savings_goal}% complete</span> · <span className="font-semibold text-orange-600">{dashboard.finance.status}</span></>}
               </>
-            )}
-            {botId === "planner" && (
-              <>
-                You have <span className="font-semibold text-blue-600">8 tasks</span> and{" "}
-                <span className="font-semibold text-purple-600">3 meetings</span> today
-              </>
-            )}
-            {botId === "speakup" && (
-              <>
-                Your conversations are <span className="font-semibold text-green-600">private & secure</span>.{" "}
-                <span className="font-semibold text-purple-600">24/7 support</span> available
-              </>
-            )}
-            {botId === "upskill" && (
-              <>
-                <span className="font-semibold text-purple-600">2 active courses</span> and{" "}
-                <span className="font-semibold text-blue-600">5 career goals</span> in progress
-              </>
-            )}
-            {botId === "finance" && (
-              <>
-                Savings goal: <span className="font-semibold text-green-600">72.5% complete</span>.{" "}
-                <span className="font-semibold text-orange-600">₹28,000</span> budget remaining
-              </>
+            ) : (
+              <span className="text-gray-400">Loading your data…</span>
             )}
           </p>
-          <p className="text-sm text-purple-600 mt-2 italic">✨ You're doing amazing! Keep up the great work!</p>
+          <p className="text-xs text-purple-500 italic">{activeAgent.badge} · Powered by {activeAgent.name}</p>
         </div>
-        <Button 
-          onClick={handleStartBot}
-          className="bg-gradient-to-r from-pink-500 via-purple-500 to-rose-500 hover:from-pink-600 hover:via-purple-600 hover:to-rose-600 text-white shadow-lg w-full md:w-auto whitespace-nowrap"
+        <Button
+          onClick={() => navigate("/", { state: { botId: activeBot } })}
+          className={`text-white shadow-lg w-full md:w-auto whitespace-nowrap ${
+            activeBot === "wellness" ? "bg-amber-500 hover:bg-amber-600" :
+            activeBot === "planner"  ? "bg-blue-500 hover:bg-blue-600" :
+            activeBot === "speakup"  ? "bg-sky-500 hover:bg-sky-600" :
+            activeBot === "upskill"  ? "bg-rose-500 hover:bg-rose-600" :
+            "bg-orange-500 hover:bg-orange-600"
+          }`}
         >
-          <Sparkles className="w-4 h-4 mr-2" />
-          {botId === "wellness" && "Start Wellness"}
-          {botId === "planner" && "AI Planner"}
-          {botId === "speakup" && "Talk Privately"}
-          {botId === "upskill" && "Find Courses"}
-          {botId === "finance" && "Track Budget"}
+          <MessageSquare className="w-4 h-4 mr-2" />
+          {activeAgent.cta}
         </Button>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        <Card className="p-4 md:p-5 border-2 border-pink-200 bg-gradient-to-br from-pink-50 via-rose-50 to-white shadow-md hover:shadow-lg transition-all">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Wellness Score</p>
-              <p className="text-3xl font-bold text-pink-600">85%</p>
-              <p className="text-xs text-green-600 mt-1">❤️ Feeling great!</p>
-            </div>
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-pink-200 to-rose-200 flex items-center justify-center">
-              <Heart className="w-7 h-7 text-pink-600" />
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-5 border-2 border-purple-200 bg-gradient-to-br from-purple-50 via-lavender-50 to-white shadow-md hover:shadow-lg transition-all">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Tasks Today</p>
-              <p className="text-3xl font-bold text-purple-600">8/11</p>
-              <p className="text-xs text-blue-600 mt-1">💪 Almost there!</p>
-            </div>
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-200 to-blue-200 flex items-center justify-center">
-              <CheckCircle2 className="w-7 h-7 text-purple-600" />
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-5 border-2 border-rose-200 bg-gradient-to-br from-rose-50 via-pink-50 to-white shadow-md hover:shadow-lg transition-all">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Savings Goal</p>
-              <p className="text-3xl font-bold text-rose-600">72.5%</p>
-              <p className="text-xs text-green-600 mt-1">📈 On track!</p>
-            </div>
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-rose-200 to-orange-200 flex items-center justify-center">
-              <TrendingUp className="w-7 h-7 text-rose-600" />
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-5 border-2 border-pink-300 bg-gradient-to-br from-pink-100 via-purple-50 to-white shadow-md hover:shadow-lg transition-all">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Family Alerts</p>
-              <p className="text-3xl font-bold text-pink-600">2</p>
-              <p className="text-xs text-orange-600 mt-1">🔔 Needs attention</p>
-            </div>
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-pink-300 to-rose-300 flex items-center justify-center animate-pulse">
-              <Bell className="w-7 h-7 text-pink-700" />
-            </div>
-          </div>
-        </Card>
+      {/* ── Quick Stats — live, clicking switches to that agent's view ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        {quickStats.map((stat) => {
+          const isStatActive = activeBot === stat.botId
+          return (
+            <Card
+              key={stat.label}
+              onClick={() => handleBotClick(stat.botId)}
+              className={`p-4 md:p-5 border-2 ${stat.border} bg-gradient-to-br ${stat.card} shadow-md hover:shadow-lg transition-all cursor-pointer group ${isStatActive ? "ring-2 ring-offset-1 ring-purple-400 scale-[1.02]" : ""}`}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs sm:text-sm text-gray-600 mb-1">{stat.label}</p>
+                  <p className={`text-2xl sm:text-3xl font-bold ${stat.valueColor}`}>{stat.value}</p>
+                  <p className={`text-xs mt-1 ${stat.subColor}`}>{stat.sub}</p>
+                </div>
+                <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br ${stat.iconBg} flex items-center justify-center`}>
+                  {stat.icon}
+                </div>
+              </div>
+              <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                <MessageSquare className="w-3 h-3" />
+                {isStatActive ? "Active" : "Switch view"}
+              </div>
+            </Card>
+          )
+        })}
       </div>
 
-      {/* Main Content Tabs */}
-      <Tabs defaultValue="calendar" className="space-y-4 md:space-y-6">
-        <div className="overflow-x-auto pb-1">
-        <TabsList className="inline-flex w-auto min-w-full md:grid md:w-full md:grid-cols-6 h-auto md:h-10 p-1 gap-1">
-          <TabsTrigger value="calendar" className="flex-shrink-0 px-2 md:px-4 text-xs md:text-sm h-9 md:h-auto">
-            <Calendar className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
-            <span className="hidden sm:inline">Calendar</span>
-            <span className="sm:hidden">Cal</span>
-          </TabsTrigger>
-          <TabsTrigger value="family" className="flex-shrink-0 px-2 md:px-4 text-xs md:text-sm h-9 md:h-auto">
-            <Heart className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
-            <span className="hidden sm:inline">Family Care</span>
-            <span className="sm:hidden">Family</span>
-          </TabsTrigger>
-          <TabsTrigger value="courses" className="flex-shrink-0 px-2 md:px-4 text-xs md:text-sm h-9 md:h-auto">
-            <BookOpen className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
-            <span className="hidden sm:inline">Courses</span>
-            <span className="sm:hidden">Learn</span>
-          </TabsTrigger>
-          <TabsTrigger value="finance" className="flex-shrink-0 px-2 md:px-4 text-xs md:text-sm h-9 md:h-auto">
-            <DollarSign className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
-            <span className="hidden sm:inline">Finance</span>
-            <span className="sm:hidden">Money</span>
-          </TabsTrigger>
-          <TabsTrigger value="schedule" className="flex-shrink-0 px-2 md:px-4 text-xs md:text-sm h-9 md:h-auto">
-            <Clock className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
-            <span className="hidden sm:inline">Schedule</span>
-            <span className="sm:hidden">Time</span>
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex-shrink-0 px-2 md:px-4 text-xs md:text-sm h-9 md:h-auto">
-            <BarChart3 className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
-            <span className="hidden sm:inline">My Stats</span>
-            <span className="sm:hidden">Stats</span>
-          </TabsTrigger>
-        </TabsList>
-        </div>
-
-        {/* Calendar & Events Tab */}
-        <TabsContent value="calendar" className="space-y-4 md:space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-            <Card className="lg:col-span-2 p-6">
-              <h2 className="text-2xl font-bold mb-4">Today's Schedule</h2>
-              <div className="space-y-3">
-                {upcomingEvents.map((event) => {
-                  const Icon = event.icon
-                  return (
-                    <div
-                      key={event.id}
-                      className={`p-4 rounded-xl border-2 ${
-                        event.color === "blue"
-                          ? "border-blue-200 bg-blue-50"
-                          : event.color === "pink"
-                          ? "border-pink-200 bg-pink-50"
-                          : event.color === "purple"
-                          ? "border-purple-200 bg-purple-50"
-                          : "border-orange-200 bg-orange-50"
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <Icon className={`w-6 h-6 text-${event.color}-600 mt-1`} />
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900">{event.title}</h3>
-                          <p className="text-sm text-gray-600 flex items-center gap-2 mt-1">
-                            <Clock className="w-4 h-4" />
-                            {event.time}
-                          </p>
-                        </div>
-                        <Badge variant="outline">{event.type}</Badge>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </Card>
-
-            <Card className="p-6">
-              <h2 className="text-xl font-bold mb-4">Week Overview</h2>
-              <div className="space-y-3">
-                <div className="p-3 bg-teal-50 rounded-lg border border-teal-200">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-semibold text-sm">Work Meetings</span>
-                    <Badge className="bg-blue-100 text-blue-700">12</Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Avg 2.4 per day</p>
-                </div>
-                <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-semibold text-sm">Learning Hours</span>
-                    <Badge className="bg-purple-100 text-purple-700">5h</Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">3 course modules</p>
-                </div>
-                <div className="p-3 bg-pink-50 rounded-lg border border-pink-200">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-semibold text-sm">Family Time</span>
-                    <Badge className="bg-pink-100 text-pink-700">15h</Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Kids & eldercare</p>
-                </div>
-                <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-semibold text-sm">Wellness</span>
-                    <Badge className="bg-green-100 text-green-700">3.5h</Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Exercise & meditation</p>
-                </div>
-              </div>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Family Care Tab */}
-        <TabsContent value="family" className="space-y-6">
-          <Card className="p-6 bg-gradient-to-br from-pink-50 to-purple-50 border-2 border-pink-200">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">Family Care Alerts & Reminders</h2>
-                <p className="text-sm text-gray-600 mt-1">💕 Caring for your loved ones with love</p>
-              </div>
-              <Button variant="outline" size="sm" className="border-pink-300 text-pink-600 hover:bg-pink-100">
-                <Bell className="w-4 h-4 mr-2" />
-                Manage Alerts
-              </Button>
-            </div>
-
-            <div className="space-y-4">
-              {familyAlerts.map((alert) => {
-                const Icon = alert.icon
-                return (
-                  <div
-                    key={alert.id}
-                    className={`p-6 rounded-2xl border-2 shadow-md hover:shadow-lg transition-all ${
-                      alert.priority === "high"
-                        ? "border-pink-300 bg-gradient-to-r from-pink-100 to-rose-100"
-                        : alert.priority === "medium"
-                        ? "border-orange-200 bg-gradient-to-r from-orange-50 to-yellow-50"
-                        : "border-purple-200 bg-gradient-to-r from-blue-50 to-purple-50"
-                    }`}
-                  >
-                    <div className="flex items-start gap-4">
-                      <div
-                        className={`w-14 h-14 rounded-full flex items-center justify-center shadow-md ${
-                          alert.priority === "high"
-                            ? "bg-gradient-to-br from-pink-300 to-rose-400"
-                            : alert.priority === "medium"
-                            ? "bg-gradient-to-br from-orange-300 to-yellow-300"
-                            : "bg-gradient-to-br from-blue-300 to-purple-300"
-                        }`}
-                      >
-                        <Icon
-                          className={`w-7 h-7 ${
-                            alert.priority === "high"
-                              ? "text-white"
-                              : alert.priority === "medium"
-                              ? "text-orange-700"
-                              : "text-blue-700"
-                          }`}
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <h3 className="font-bold text-gray-900 text-lg">{alert.title}</h3>
-                            <p className="text-sm text-gray-600 mt-1">{alert.description}</p>
-                          </div>
-                          <Badge
-                            className={`rounded-full px-3 ${
-                              alert.priority === "high"
-                                ? "bg-pink-200 text-pink-800 border-pink-300"
-                                : alert.priority === "medium"
-                                ? "bg-orange-200 text-orange-800 border-orange-300"
-                                : "bg-blue-200 text-blue-800 border-blue-300"
-                            }`}
-                          >
-                            {alert.priority}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-3 mt-4">
-                          <span className="text-sm text-gray-600 flex items-center gap-1.5 bg-white px-3 py-1 rounded-full">
-                            <Clock className="w-4 h-4" />
-                            {alert.time}
-                          </span>
-                          <Button size="sm" className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white rounded-full shadow-md">
-                            {alert.action}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Eldercare Tracking */}
-            <div className="mt-8 p-6 bg-gradient-to-r from-purple-100 via-pink-100 to-rose-100 rounded-2xl border-2 border-pink-300 shadow-lg">
-              <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
-                <Users className="w-6 h-6 text-pink-600" />
-                <span className="bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">Eldercare Dashboard</span>
-              </h3>
-              <p className="text-sm text-gray-600 mb-4">💞 Taking care of mom with love and attention</p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-5 bg-white rounded-xl shadow-md border border-pink-200">
-                  <p className="text-sm text-gray-600 mb-2 flex items-center gap-1">
-                    <Pill className="w-4 h-4 text-purple-500" />
-                    Medications
-                  </p>
-                  <p className="text-3xl font-bold text-purple-600">2/3</p>
-                  <p className="text-xs text-green-600 mt-2 font-semibold">✓ Taken today</p>
-                </div>
-                <div className="p-5 bg-white rounded-xl shadow-md border border-pink-200">
-                  <p className="text-sm text-gray-600 mb-2 flex items-center gap-1">
-                    <Heart className="w-4 h-4 text-pink-500" />
-                    Vitals
-                  </p>
-                  <p className="text-3xl font-bold text-pink-600">Normal</p>
-                  <p className="text-xs text-gray-600 mt-2">BP: 120/80 mmHg</p>
-                </div>
-                <div className="p-5 bg-white rounded-xl shadow-md border border-pink-200">
-                  <p className="text-sm text-gray-600 mb-2 flex items-center gap-1">
-                    <Calendar className="w-4 h-4 text-rose-500" />
-                    Next Appointment
-                  </p>
-                  <p className="text-3xl font-bold text-rose-600">Today</p>
-                  <p className="text-xs text-gray-600 mt-2">2:00 PM - Dr. Sharma</p>
-                </div>
-              </div>
-            </div>
-          </Card>
-        </TabsContent>
-
-        {/* Courses Tab */}
-        <TabsContent value="courses" className="space-y-6">
-          <Card className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Personalized Course Recommendations</h2>
-                <p className="text-sm text-gray-600 mt-1">
-                  🎓 AI-curated based on your skills, goals, and career path
-                </p>
-              </div>
-              <Button variant="outline" size="sm" className="border-purple-300 text-purple-600 hover:bg-purple-100">
-                <GraduationCap className="w-4 h-4 mr-2" />
-                All Courses
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {courseRecommendations.map((course) => (
-                <div
-                  key={course.id}
-                  className="p-6 rounded-2xl border-2 border-purple-300 bg-gradient-to-br from-white to-purple-50 hover:border-pink-400 hover:shadow-xl transition-all"
-                >
-                  <div className="flex items-start gap-4 mb-4">
-                    <div className="text-5xl">{course.thumbnail}</div>
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className="font-bold text-lg text-gray-900">{course.title}</h3>
-                        <Badge className="bg-gradient-to-r from-green-200 to-emerald-200 text-green-800 border-green-300 rounded-full">
-                          ✨ {course.matchScore}% Match
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-purple-600 font-medium">{course.provider}</p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-3 mb-4">
-                    <div className="bg-purple-50 p-3 rounded-lg">
-                      <p className="text-xs text-gray-600 mb-1">Duration</p>
-                      <p className="text-sm font-bold text-purple-600">{course.duration}</p>
-                    </div>
-                    <div className="bg-pink-50 p-3 rounded-lg">
-                      <p className="text-xs text-gray-600 mb-1">Level</p>
-                      <p className="text-sm font-bold text-pink-600">{course.level}</p>
-                    </div>
-                    <div className="bg-rose-50 p-3 rounded-lg">
-                      <p className="text-xs text-gray-600 mb-1">Rating</p>
-                      <p className="text-sm font-bold text-rose-600">⭐ {course.rating}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {course.skills.map((skill) => (
-                      <Badge key={skill} variant="outline" className="text-xs border-purple-300 text-purple-700 bg-purple-50">
-                        {skill}
-                      </Badge>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center justify-between pt-3 border-t border-purple-200">
-                    <span className="text-xs text-gray-600 flex items-center gap-1">
-                      👥 {course.enrolled} enrolled
-                    </span>
-                    <Button 
-                      size="sm" 
-                      onClick={() => handleEnrollCourse(course.id)}
-                      disabled={enrolledCourses.includes(course.id)}
-                      className={`rounded-full shadow-md transition-all ${
-                        enrolledCourses.includes(course.id)
-                          ? 'bg-green-500 hover:bg-green-600'
-                          : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600'
-                      } text-white`}
-                    >
-                      {enrolledCourses.includes(course.id) ? '✓ Enrolled' : 'Enroll Now'}
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Current Courses */}
-            <div className="mt-8">
-              <h3 className="text-xl font-bold mb-4 text-gray-900">📚 Currently Enrolled</h3>
-              <div className="p-6 rounded-2xl border-2 border-pink-300 bg-gradient-to-r from-pink-50 to-purple-50 shadow-md">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h4 className="font-bold text-gray-900">Excel Advanced Course</h4>
-                    <p className="text-sm text-muted-foreground">Udemy • Module 3 of 8</p>
-                  </div>
-                  <Badge className="bg-teal-100 text-teal-700 border-teal-200">In Progress</Badge>
-                </div>
-                <div className="mb-3">
-                  <div className="flex items-center justify-between text-sm mb-1">
-                    <span className="text-muted-foreground">Progress</span>
-                    <span className="font-semibold">37.5%</span>
-                  </div>
-                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div className="h-full bg-teal-600" style={{ width: "37.5%" }} />
-                  </div>
-                </div>
-                <Button size="sm" variant="outline">
-                  Continue Learning
-                </Button>
-              </div>
-            </div>
-          </Card>
-        </TabsContent>
-
-        {/* Finance Tab */}
-        <TabsContent value="finance" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="p-6">
-              <h2 className="text-2xl font-bold mb-6">Monthly Budget</h2>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-muted-foreground">Total Budget</span>
-                    <span className="font-bold text-xl">₹{financialInsights.monthlyBudget.total.toLocaleString()}</span>
-                  </div>
-                  <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-teal-500 to-blue-500"
-                      style={{
-                        width: `${(financialInsights.monthlyBudget.spent / financialInsights.monthlyBudget.total) * 100}%`,
-                      }}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between mt-2">
-                    <span className="text-sm text-green-600">
-                      Spent: ₹{financialInsights.monthlyBudget.spent.toLocaleString()}
-                    </span>
-                    <span className="text-sm text-orange-600">
-                      Remaining: ₹{financialInsights.monthlyBudget.remaining.toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t border-pink-200">
-                  <h3 className="font-bold mb-3 text-gray-900">🎯 Savings Goal</h3>
-                  <div className="p-5 bg-gradient-to-r from-pink-100 via-rose-100 to-purple-100 rounded-2xl border-2 border-pink-300 shadow-md">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-pink-300 to-rose-400 flex items-center justify-center shadow-md">
-                        <TrendingUp className="w-7 h-7 text-white" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-gray-900 text-lg">{financialInsights.savingsGoal.goalName}</h4>
-                        <p className="text-sm text-gray-700 font-medium">
-                          ₹{financialInsights.savingsGoal.current.toLocaleString()} of ₹
-                          {financialInsights.savingsGoal.target.toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="mb-3">
-                      <div className="h-3 bg-white rounded-full overflow-hidden shadow-inner">
-                        <div
-                          className="h-full bg-gradient-to-r from-pink-500 via-rose-500 to-purple-500"
-                          style={{ width: `${financialInsights.savingsGoal.progress}%` }}
-                        />
-                      </div>
-                    </div>
-                    <p className="text-sm text-pink-700 font-bold">
-                      {financialInsights.savingsGoal.progress}% Complete 🎉 You're doing great!
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200">
-              <h2 className="text-2xl font-bold mb-2 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Financial Recommendations</h2>
-              <p className="text-sm text-gray-600 mb-6">💰 Smart ways to grow your wealth</p>
-              <div className="space-y-4">
-                {financialInsights.recommendations.map((rec, idx) => (
-                  <div
-                    key={idx}
-                    className="p-6 rounded-2xl border-2 border-purple-300 bg-gradient-to-r from-white to-purple-50 hover:border-pink-400 hover:shadow-lg transition-all"
-                  >
-                    <div className="flex items-start gap-4 mb-4">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-300 to-pink-300 flex items-center justify-center shadow-md">
-                        <AlertCircle className="w-6 h-6 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-bold text-gray-900 text-lg">{rec.title}</h3>
-                        <p className="text-sm text-gray-600 mt-2">{rec.description}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <Badge className="bg-gradient-to-r from-green-200 to-emerald-200 text-green-800 border-green-300 rounded-full px-3 py-1">
-                        🎯 Potential: {rec.potential}
-                      </Badge>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => handleLearnMore(rec.title)}
-                        className="border-purple-300 text-purple-600 hover:bg-purple-100 rounded-full hover:shadow-md transition-all"
-                      >
-                        Learn More →
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-
-                <div className="mt-6 p-5 bg-linear-to-r from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200">
-                  <h3 className="font-bold text-gray-900 mb-2">💡 Smart Tip</h3>
-                  <p className="text-sm text-gray-700">
-                    Based on your spending patterns, you can save an additional ₹8,000 per month by reducing dining out expenses by 30%.
-                  </p>
-                </div>
-              </div>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Schedule Tab */}
-        <TabsContent value="schedule" className="space-y-6">
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold">AI-Optimized Daily Schedule</h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Your personalized time-blocked plan for maximum productivity
-                </p>
-              </div>
-              <Button className="bg-gradient-to-r from-teal-500 to-blue-500 text-white">
-                <Sparkles className="w-4 h-4 mr-2" />
-                Re-optimize
-              </Button>
-            </div>
-
-            <div className="space-y-2">
-              {todaySchedule.map((item, idx) => (
-                <div
-                  key={idx}
-                  className={`p-4 rounded-lg border-2 flex items-center gap-4 transition-all ${
-                    item.done || markedTasks.includes(idx)
-                      ? "border-green-200 bg-green-50 opacity-60"
-                      : "border-gray-200 bg-white hover:border-teal-300 hover:shadow-sm"
-                  }`}
-                >
-                  <div className="shrink-0">
-                    {(item.done || markedTasks.includes(idx)) ? (
-                      <CheckCircle2 className="w-6 h-6 text-green-600" />
-                    ) : (
-                      <div className="w-6 h-6 rounded-full border-2 border-gray-300 hover:border-teal-400 transition-colors" />
-                    )}
-                  </div>
-                  <div className="flex-1 flex items-center justify-between">
-                    <div>
-                      <span className="font-bold text-gray-900">{item.time}</span>
-                      <span className={`ml-3 ${(item.done || markedTasks.includes(idx)) ? "line-through text-gray-500" : "text-gray-700"}`}>
-                        {item.activity}
-                      </span>
-                    </div>
-                    {!item.done && !markedTasks.includes(idx) && (
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => handleMarkDone(idx)}
-                        className="hover:bg-green-50 hover:border-green-400 hover:text-green-700 transition-all"
-                      >
-                        ✓ Mark Done
-                      </Button>
-                    )}
-                    {markedTasks.includes(idx) && (
-                      <Badge className="bg-green-100 text-green-700 border-green-300">
-                        ✓ Completed
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-6 p-5 bg-gradient-to-r from-teal-50 to-blue-50 rounded-xl border-2 border-teal-200">
-              <h3 className="font-bold text-gray-900 mb-2">🤖 AI Insights</h3>
-              <ul className="space-y-2 text-sm text-gray-700">
-                <li>• Scheduled 30-min wellness break at 1 PM - perfect timing for stress relief</li>
-                <li>• Added buffer time before kids' pickup to avoid rushing</li>
-                <li>• Course learning scheduled for 6 PM when focus is typically high</li>
-                <li>• Reserved 9 PM for personal time - important for self-care!</li>
-              </ul>
-            </div>
-          </Card>
-        </TabsContent>
-
-        {/* Analytics Tab - User Specific */}
-        <TabsContent value="analytics" className="space-y-6">
-          <Card className="p-6">
-            <div className="mb-6">
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-pink-600 via-purple-600 to-rose-600 bg-clip-text text-transparent mb-2">
-                Your Personal Stats
-              </h2>
-              <p className="text-muted-foreground">Track your wellness journey, productivity, and goals</p>
-            </div>
-
-            {/* User Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-              <div className="p-6 rounded-xl border-2 border-pink-200 bg-gradient-to-br from-pink-50 to-white">
-                <div className="text-sm text-muted-foreground mb-1">Wellness Score</div>
-                <div className="text-3xl font-bold text-pink-600">85%</div>
-                <div className="text-xs text-green-600 mt-1">↑ 5% from last week</div>
-              </div>
-              <div className="p-6 rounded-xl border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-white">
-                <div className="text-sm text-muted-foreground mb-1">Tasks Completed</div>
-                <div className="text-3xl font-bold text-purple-600">156</div>
-                <div className="text-xs text-green-600 mt-1">This month</div>
-              </div>
-              <div className="p-6 rounded-xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white">
-                <div className="text-sm text-muted-foreground mb-1">Learning Hours</div>
-                <div className="text-3xl font-bold text-blue-600">24h</div>
-                <div className="text-xs text-orange-600 mt-1">2 courses active</div>
-              </div>
-              <div className="p-6 rounded-xl border-2 border-rose-200 bg-gradient-to-br from-rose-50 to-white">
-                <div className="text-sm text-muted-foreground mb-1">Savings Progress</div>
-                <div className="text-3xl font-bold text-rose-600">72.5%</div>
-                <div className="text-xs text-green-600 mt-1">On track!</div>
-              </div>
-            </div>
-
-            {/* Activity Timeline */}
-            <div className="mb-8">
-              <h3 className="text-xl font-bold mb-4">This Week's Activity</h3>
-              <div className="space-y-3">
-                {[
-                  { day: "Monday", wellness: 90, tasks: 8, learning: 2, finance: 5 },
-                  { day: "Tuesday", wellness: 85, tasks: 6, learning: 1.5, finance: 3 },
-                  { day: "Wednesday", wellness: 88, tasks: 10, learning: 2, finance: 4 },
-                  { day: "Thursday", wellness: 82, tasks: 7, learning: 1, finance: 2 },
-                  { day: "Today", wellness: 85, tasks: 8, learning: 2, finance: 6 },
-                ].map((day) => (
-                  <div key={day.day} className="p-4 bg-gradient-to-r from-pink-50 via-purple-50 to-rose-50 rounded-lg border border-pink-200">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-bold text-gray-900">{day.day}</span>
-                      <Badge className="bg-pink-100 text-pink-700 border-pink-300">
-                        Wellness: {day.wellness}%
-                      </Badge>
-                    </div>
-                    <div className="grid grid-cols-3 gap-3 text-sm">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-purple-600" />
-                        <span className="text-gray-600">{day.tasks} tasks</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="w-4 h-4 text-blue-600" />
-                        <span className="text-gray-600">{day.learning}h learning</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <TrendingUp className="w-4 h-4 text-green-600" />
-                        <span className="text-gray-600">₹{day.finance}k saved</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Achievements */}
-            <div className="mb-8">
-              <h3 className="text-xl font-bold mb-4">Recent Achievements 🎉</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-5 rounded-xl bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-200">
-                  <div className="text-3xl mb-2">🏆</div>
-                  <h4 className="font-bold text-gray-900 mb-1">7-Day Wellness Streak!</h4>
-                  <p className="text-sm text-gray-600">Completed daily wellness exercises for a week</p>
-                </div>
-                <div className="p-5 rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200">
-                  <div className="text-3xl mb-2">📚</div>
-                  <h4 className="font-bold text-gray-900 mb-1">Course Module Completed</h4>
-                  <p className="text-sm text-gray-600">Finished Excel Advanced - Module 2</p>
-                </div>
-                <div className="p-5 rounded-xl bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200">
-                  <div className="text-3xl mb-2">💰</div>
-                  <h4 className="font-bold text-gray-900 mb-1">Savings Milestone</h4>
-                  <p className="text-sm text-gray-600">Reached 70% of emergency fund goal</p>
-                </div>
-                <div className="p-5 rounded-xl bg-gradient-to-br from-pink-50 to-rose-50 border-2 border-pink-200">
-                  <div className="text-3xl mb-2">❤️</div>
-                  <h4 className="font-bold text-gray-900 mb-1">Family Care Champion</h4>
-                  <p className="text-sm text-gray-600">Never missed a medication reminder this month</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Personalized Insights */}
-            <div className="p-6 bg-gradient-to-r from-purple-50 via-pink-50 to-rose-50 rounded-xl border-2 border-purple-200">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">💡 Your Personalized Insights</h3>
-              <ul className="space-y-3">
-                <li className="flex items-start gap-3">
-                  <Sparkles className="w-5 h-5 text-purple-600 mt-0.5" />
-                  <span className="text-gray-700">
-                    You're most productive between 10-12 PM. Try scheduling important tasks during this window!
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Heart className="w-5 h-5 text-pink-600 mt-0.5" />
-                  <span className="text-gray-700">
-                    Your wellness score improves by 12% on days you complete morning exercises.
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <TrendingUp className="w-5 h-5 text-green-600 mt-0.5" />
-                  <span className="text-gray-700">
-                    Great job! You're saving ₹3,000 more per month than your initial budget plan.
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <BookOpen className="w-5 h-5 text-blue-600 mt-0.5" />
-                  <span className="text-gray-700">
-                    Evening learning (6-7 PM) works best for you - 85% course completion rate!
-                  </span>
-                </li>
-              </ul>
-            </div>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      {/* ── Agent-specific tabs — change per selected agent ── */}
+      <AgentTabs
+        botId={activeBot}
+        dashboard={dashboard}
+        loadingDash={loadingDash}
+        onChat={handleBotClick}
+        onNavigateToChat={(id) => navigate("/", { state: { botId: id } })}
+        enrolledCourses={enrolledCourses}
+        onEnroll={handleEnrollCourse}
+        markedTasks={markedTasks}
+        onMarkDone={handleMarkDone}
+      />
       </div>
     </div>
   )

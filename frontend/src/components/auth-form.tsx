@@ -58,7 +58,7 @@ export function AuthForm() {
           description: `Account created successfully for ${formData.name}`,
         })
         
-        navigate("/")
+        navigate("/dashboard")
       } else {
         // Login existing user
         if (!formData.email || !formData.password) {
@@ -79,7 +79,7 @@ export function AuthForm() {
           description: "You're logged in successfully",
         })
         
-        navigate("/")
+        navigate("/dashboard")
       }
     } catch (err: any) {
       setError(err.message || "Authentication failed. Please try again.")
@@ -116,7 +116,7 @@ export function AuthForm() {
         description: "Signed in with Google successfully",
       })
       
-      navigate("/")
+      navigate("/dashboard")
     } catch (err: any) {
       setError(err.message || "Google authentication failed")
       toast({
@@ -198,7 +198,7 @@ export function AuthForm() {
               title: "Welcome, Priya! 💜",
               description: "Demo mode activated — explore all 5 AI agents!",
             })
-            navigate("/")
+            navigate("/dashboard")
           }}
           className="w-full h-14 text-lg font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] flex items-center justify-center gap-3 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-600 hover:via-teal-600 hover:to-cyan-600 text-white border-2 border-emerald-400/30"
         >

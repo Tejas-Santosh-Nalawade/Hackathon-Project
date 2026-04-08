@@ -4,10 +4,21 @@ Career Agent (GrowthGuru)
 Specialized agent for career development and upskilling.
 """
 
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 from datetime import datetime, timedelta
 
 from agents.base_agent import BaseAgent
+
+
+# Keywords that trigger a live search for courses/jobs
+COURSE_TRIGGER_KEYWORDS = [
+    "course", "learn", "skill", "training", "certification", "tutorial",
+    "how to", "study", "upskill", "resources", "where can i"
+]
+JOB_TRIGGER_KEYWORDS = [
+    "job", "hiring", "salary", "market", "trend", "demand", "career",
+    "interview", "resume", "promotion", "switch"
+]
 
 
 class CareerAgent(BaseAgent):
@@ -52,7 +63,95 @@ class CareerAgent(BaseAgent):
         learning_keywords = ["studying", "practicing", "completed", "certification"]
         if any(keyword in user_message.lower() for keyword in learning_keywords):
             self.learning_activities.append(datetime.now())
-    
+
+    def _build_search_context(self, user_message: str) -> str:
+        """Run live search and format results as context for the LLM."""
+        try:
+            from search_utils import search_courses, search_jobs_news
+        except ImportError:
+            return ""
+
+        msg_lower = user_message.lower()
+        want_courses = any(k in msg_lower for k in COURSE_TRIGGER_KEYWORDS)
+        want_jobs = any(k in msg_lower for k in JOB_TRIGGER_KEYWORDS)
+
+        parts = []
+
+        if want_courses:
+            results = search_courses(user_message)
+            if results:
+                parts.append("=== LIVE COURSE SEARCH RESULTS ===")
+                for r in results:
+                    parts.append(f"- {r['title']}: {r['url']}\n  {r['snippet']}")
+
+        if want_jobs:
+            results = search_jobs_news(user_message)
+            if results:
+                parts.append("=== LIVE JOB MARKET NEWS ===")
+                for r in results:
+                    parts.append(f"- {r['title']}: {r['url']}\n  {r['snippet']}")
+
+        return "\n".join(parts)
+
+    def generate_response(
+        self,
+        user_message: str,
+        user_id: Optional[str] = None,
+        conversation_history: Optional[List] = None
+    ) -> str:
+        """Override to inject live search results before calling LLM."""
+        conversation_history = conversation_history or []
+
+        # Build memory context
+        context = self.build_context(user_message, conversation_history, user_id=user_id)
+
+        # Build live search context
+        search_context = self._build_search_context(user_message)
+
+        messages = [{"role": "system", "content": self.system_instruction}]
+
+        if context:
+            messages.append({"role": "system", "content": f"Context from memory:\n{context}"})
+
+        if search_context:
+            messages.append({
+                "role": "system",
+                "content": (
+                    f"{search_context}\n\n"
+                    "Use the above real-time search results to give specific, "
+                    "up-to-date recommendations with actual links where relevant."
+                )
+            })
+
+        for msg in conversation_history[-5:]:
+            messages.append(msg)
+        messages.append({"role": "user", "content": user_message})
+
+        response_text = None
+        for model in self.model_priority:
+            try:
+                response = self.groq_client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    temperature=0.7,
+                    max_tokens=600
+                )
+                response_text = response.choices[0].message.content
+                break
+            except Exception as e:
+                print(f"Model {model} failed: {e}")
+                continue
+
+        if not response_text:
+            response_text = "I'm having trouble responding right now. Please try again."
+
+        self.store_memory(user_message, response_text, user_id)
+        self.last_interaction = datetime.now()
+        self.interaction_count += 1
+        self._save_state()
+
+        return response_text
+
     def calculate_metrics(self, user_id: Optional[str] = None) -> Dict:
         """Calculate career development metrics."""
         # Recent activity (last 30 days)

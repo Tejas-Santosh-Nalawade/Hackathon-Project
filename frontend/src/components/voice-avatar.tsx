@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
-import { Mic, MicOff, Volume2, VolumeX, Loader2, Play, Clock } from "lucide-react"
+import { useState, useEffect, useRef, useCallback } from "react"
+import { Mic, MicOff, Volume2, VolumeX, Square, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { getVoiceAgent } from "@/lib/voice-agent"
+import { getVoiceAgent, cancelAllVoice } from "@/lib/voice-agent"
 import { GuidedSessionModal } from "@/components/guided-session-modal"
 import { getSessionsForBot, type GuidedSession } from "@/lib/guided-sessions"
 import type { Bot } from "@/lib/types"
@@ -218,10 +218,31 @@ export function VoiceAvatar({ bot, onSendMessage }: VoiceAvatarProps) {
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false)
   const [currentSession, setCurrentSession] = useState<GuidedSession | null>(null)
   const voiceAgentRef = useRef(getVoiceAgent())
+  const prevBotIdRef = useRef<string | undefined>(undefined)
 
-  // Welcome message when component mounts - Agent specific
+  // ── CRITICAL: Cancel ALL voice when agent changes ──
   useEffect(() => {
-    if (bot?.bot_id && voiceEnabled) {
+    const currentBotId = bot?.bot_id
+
+    // If bot changed, cancel everything from the previous session
+    if (prevBotIdRef.current !== undefined && prevBotIdRef.current !== currentBotId) {
+      console.log(`[Voice] Agent switched: ${prevBotIdRef.current} → ${currentBotId}. Cancelling all voice.`)
+      cancelAllVoice()
+      setIsSpeaking(false)
+      setIsListening(false)
+      setTranscript("")
+      setResponse("")
+    }
+
+    prevBotIdRef.current = currentBotId
+  }, [bot?.bot_id])
+
+  // Welcome message when bot changes — only if voice enabled
+  useEffect(() => {
+    if (!bot?.bot_id || !voiceEnabled) return
+
+    // Small delay to ensure any previous speech was cancelled
+    const timer = setTimeout(() => {
       let welcomeMsg = ""
       
       switch (bot.bot_id) {
@@ -244,18 +265,24 @@ export function VoiceAvatar({ bot, onSendMessage }: VoiceAvatarProps) {
           welcomeMsg = "Hello! Tap the microphone to start."
       }
       
-      voiceAgentRef.current.speak(welcomeMsg)
       setResponse(welcomeMsg)
       setIsSpeaking(true)
-      setTimeout(() => setIsSpeaking(false), 5000)
+      
+      voiceAgentRef.current.speak(welcomeMsg, () => {
+        // Speech finished naturally
+        setIsSpeaking(false)
+      })
+    }, 200) // 200ms delay to let cancellation happen first
+
+    return () => {
+      clearTimeout(timer)
     }
   }, [bot?.bot_id, voiceEnabled])
 
-  // Cleanup on unmount
+  // Cleanup on unmount — cancel everything
   useEffect(() => {
     return () => {
-      voiceAgentRef.current.stopListening()
-      voiceAgentRef.current.stopSpeaking()
+      cancelAllVoice()
     }
   }, [])
 
@@ -265,13 +292,19 @@ export function VoiceAvatar({ bot, onSendMessage }: VoiceAvatarProps) {
       voiceAgentRef.current.stopListening()
       setIsListening(false)
     } else {
+      // Stop any current speech before listening
+      if (isSpeaking) {
+        voiceAgentRef.current.stopSpeaking()
+        setIsSpeaking(false)
+      }
+      
       // Start listening
       setIsListening(true)
       setTranscript("")
       setResponse("")
 
       voiceAgentRef.current.listen(
-        (text, isFinal) => {
+        (text, _isFinal) => {
           setTranscript(text)
         },
         async (finalText) => {
@@ -294,15 +327,18 @@ export function VoiceAvatar({ bot, onSendMessage }: VoiceAvatarProps) {
     }
   }
 
-  const handleStopSpeaking = () => {
-    voiceAgentRef.current.stopSpeaking()
+  const handleStopSpeaking = useCallback(() => {
+    cancelAllVoice()
     setIsSpeaking(false)
-  }
+    setIsListening(false)
+  }, [])
 
   const toggleVoice = () => {
-    if (voiceEnabled && isSpeaking) {
-      voiceAgentRef.current.stopSpeaking()
+    if (voiceEnabled) {
+      // Turning voice OFF — stop everything
+      cancelAllVoice()
       setIsSpeaking(false)
+      setIsListening(false)
     }
     setVoiceEnabled(!voiceEnabled)
   }
@@ -313,7 +349,7 @@ export function VoiceAvatar({ bot, onSendMessage }: VoiceAvatarProps) {
       <button
         onClick={toggleVoice}
         className="absolute top-1 right-1 md:top-2 md:right-2 w-8 h-8 md:w-10 md:h-10 rounded-full bg-white border-2 border-gray-200 shadow-md flex items-center justify-center hover:bg-gray-50 hover:border-[oklch(0.85_0.08_175)] transition-all duration-300 group z-10"
-        title={voiceEnabled ? "Voice enabled - Click to disable" : "Voice disabled - Click to enable"}
+        title={voiceEnabled ? "Voice enabled - Click to mute" : "Voice muted - Click to enable"}
       >
         {voiceEnabled ? (
           <Volume2 className="w-4 h-4 md:w-5 md:h-5 text-[oklch(0.50_0.15_175)]" />
@@ -401,16 +437,15 @@ export function VoiceAvatar({ bot, onSendMessage }: VoiceAvatarProps) {
           )}
         </Button>
 
-        {/* Stop Speaking Button */}
-        {isSpeaking && (
+        {/* Prominent STOP Button — visible whenever voice is active */}
+        {(isSpeaking || isListening) && (
           <Button
             size="lg"
-            variant="outline"
             onClick={handleStopSpeaking}
-            className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full border-2 hover:border-red-500 hover:text-red-500 transition-all"
-            title="Stop speaking"
+            className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full shadow-lg bg-red-500 hover:bg-red-600 text-white transition-all animate-pulse"
+            title="Stop everything"
           >
-            <VolumeX className="w-4 h-4 sm:w-4.5 sm:h-4.5 md:w-5 md:h-5" />
+            <Square className="w-5 h-5 sm:w-6 sm:h-6 md:w-6 md:h-6 fill-white" />
           </Button>
         )}
       </div>
@@ -420,6 +455,8 @@ export function VoiceAvatar({ bot, onSendMessage }: VoiceAvatarProps) {
         <p className="text-[10px] md:text-xs text-muted-foreground leading-relaxed">
           {isListening
             ? `Speak clearly. ${bot?.bot_id === 'wellness' ? 'Tell me about pain or stress.' : bot?.bot_id === 'finance' ? 'Ask about budgeting.' : bot?.bot_id === 'planner' ? 'Describe your tasks.' : bot?.bot_id === 'speakup' ? 'Share your concerns.' : 'Tell me what you need.'}`
+            : isSpeaking
+            ? 'Tap the red stop button to stop speaking'
             : `Tap the mic to speak OR type in the chat box below`
           }
         </p>

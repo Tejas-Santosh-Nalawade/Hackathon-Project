@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import { BotSelector } from "./bot-selector"
+import { ChatHistorySidebar } from "./chat-history-sidebar"
 import { MainContent } from "./main-content"
 
 import type { Bot, ChatMessage, SearchResult } from "@/lib/types"
@@ -13,11 +14,17 @@ import {
   saveChatHistory,
   loadChatHistory,
   clearChatHistory,
+  getChatSessions,
+  saveChatSession,
+  deleteChatSession,
+  createNewSession,
+  type ChatSession,
   getUserProfile,
   logout,
 } from "@/lib/api"
+import { cancelAllVoice } from "@/lib/voice-agent"
 import { toast } from "sonner"
-import { Menu, X, Search, Settings, LogOut, User, Bell, BarChart3 } from "lucide-react"
+import { Menu, X, Search, Settings, LogOut, User, Bell, BarChart3, Plus } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -148,6 +155,11 @@ interface DashboardProps {
 export function Dashboard({ onBotChange, selectedBotId: propSelectedBotId }: DashboardProps = {}) {
   const navigate = useNavigate()
   const [selectedBotId, setSelectedBotId] = useState<string>(propSelectedBotId || "wellness") // Use prop or default to wellness
+  
+  // Session State
+  const [sessions, setSessions] = useState<ChatSession[]>([])
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
+  
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [searchResults, setSearchResults] = useState<SearchResult[] | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -204,8 +216,30 @@ export function Dashboard({ onBotChange, selectedBotId: propSelectedBotId }: Das
   // Load chat history when bot changes
   useEffect(() => {
     if (selectedBotId) {
-      const history = loadChatHistory(selectedBotId)
-      setMessages(history)
+      const botSessions = getChatSessions(selectedBotId)
+      
+      if (botSessions.length > 0) {
+        setSessions(botSessions)
+        const activeSess = botSessions[0]
+        setCurrentSessionId(activeSess.id)
+        setMessages(activeSess.messages)
+      } else {
+        // Try migrating legacy chat history
+        const legacyHistory = loadChatHistory(selectedBotId)
+        if (legacyHistory.length > 0) {
+          const newSession = createNewSession(selectedBotId, "Legacy Chat")
+          newSession.messages = legacyHistory
+          saveChatSession(newSession)
+          setSessions([newSession])
+          setCurrentSessionId(newSession.id)
+          setMessages(legacyHistory)
+          clearChatHistory(selectedBotId)
+        } else {
+          setSessions([])
+          setCurrentSessionId(null)
+          setMessages([])
+        }
+      }
       setSearchResults(null)
     }
   }, [selectedBotId])
@@ -218,6 +252,8 @@ export function Dashboard({ onBotChange, selectedBotId: propSelectedBotId }: Das
   }, [propSelectedBotId])
 
   const handleSelectBot = useCallback((botId: string) => {
+    // Cancel all voice from previous agent before switching
+    cancelAllVoice()
     setSelectedBotId(botId)
     setIsSidebarOpen(false)
     onBotChange?.(botId) // Notify parent of bot change
@@ -240,6 +276,23 @@ export function Dashboard({ onBotChange, selectedBotId: propSelectedBotId }: Das
       setMessages(newMessages)
       setIsLoading(true)
       setSearchResults(null)
+
+      let activeSessionId = currentSessionId
+      let activeSessions = [...sessions]
+
+      // Create a session if it doesn't exist
+      if (!activeSessionId) {
+        const title = message.slice(0, 30) + (message.length > 30 ? "..." : "")
+        const newSession = createNewSession(botIdAtSend, title)
+        newSession.messages = newMessages
+        activeSessionId = newSession.id
+        setCurrentSessionId(newSession.id)
+        activeSessions = [newSession, ...activeSessions]
+      } else {
+        const sessToUpdate = activeSessions.find(s => s.id === activeSessionId)
+        if (sessToUpdate) sessToUpdate.messages = newMessages
+      }
+      setSessions(activeSessions)
 
       try {
         // Try v2 agent API first (memory-enabled)
@@ -272,7 +325,17 @@ export function Dashboard({ onBotChange, selectedBotId: propSelectedBotId }: Das
           setMessages(updatedMessages)
         }
 
+        const sessToUpdate = activeSessions.find(s => s.id === activeSessionId)
+        if (sessToUpdate) {
+          sessToUpdate.messages = updatedMessages
+          sessToUpdate.updatedAt = new Date().toISOString()
+          saveChatSession(sessToUpdate)
+          setSessions([...activeSessions].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()))
+        }
+
+        // Keep legacy sync for fallback safety
         saveChatHistory(botIdAtSend, updatedMessages)
+        
         // Mark backend as connected on successful response
         if (!isBackendConnected) {
           setIsBackendConnected(true)
@@ -286,24 +349,57 @@ export function Dashboard({ onBotChange, selectedBotId: propSelectedBotId }: Das
           content: fallbackResponse,
         }
         const updatedMessages = [...newMessages, fallbackMessage]
+        
         if (selectedBotId === botIdAtSend) {
           setMessages(updatedMessages)
+        }
+        
+        const sessToUpdate = activeSessions.find(s => s.id === activeSessionId)
+        if (sessToUpdate) {
+          sessToUpdate.messages = updatedMessages
+          sessToUpdate.updatedAt = new Date().toISOString()
+          saveChatSession(sessToUpdate)
+          setSessions([...activeSessions].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()))
         }
         saveChatHistory(botIdAtSend, updatedMessages)
       } finally {
         setIsLoading(false)
       }
     },
-    [selectedBotId, messages, isBackendConnected, isLoading]
+    [selectedBotId, messages, sessions, currentSessionId, isBackendConnected, isLoading]
   )
 
   const handleClearChat = useCallback(() => {
-    if (selectedBotId) {
-      clearChatHistory(selectedBotId)
-      setMessages([])
-      setSearchResults(null)
+    cancelAllVoice()
+    setCurrentSessionId(null)
+    setMessages([])
+    toast.success("Started a new chat")
+  }, [])
+  
+  const handleSelectSession = useCallback((sessionId: string) => {
+    cancelAllVoice()
+    const sess = sessions.find(s => s.id === sessionId)
+    if (sess) {
+      setCurrentSessionId(sessionId)
+      setMessages(sess.messages)
     }
-  }, [selectedBotId])
+  }, [sessions])
+
+  const handleDeleteSession = useCallback((sessionId: string) => {
+    deleteChatSession(selectedBotId, sessionId)
+    const newSessions = sessions.filter(s => s.id !== sessionId)
+    setSessions(newSessions)
+    if (currentSessionId === sessionId) {
+      if (newSessions.length > 0) {
+        setCurrentSessionId(newSessions[0].id)
+        setMessages(newSessions[0].messages)
+      } else {
+        setCurrentSessionId(null)
+        setMessages([])
+      }
+    }
+    toast.success("Chat deleted")
+  }, [sessions, currentSessionId, selectedBotId])
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -315,39 +411,67 @@ export function Dashboard({ onBotChange, selectedBotId: propSelectedBotId }: Das
         />
       )}
 
-      {/* Bot Selector Sidebar */}
+      {/* Bot Selector & History Sidebar */}
       <div
         className={cn(
-          "fixed inset-y-0 left-0 z-50 lg:relative lg:z-0",
-          "transition-transform duration-300 ease-in-out",
+          "fixed inset-y-0 left-0 z-50 lg:relative lg:z-0 flex flex-col h-full bg-background border-r",
+          "transition-transform duration-300 ease-in-out w-72",
           isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
-        <BotSelector
-          bots={bots || []}
-          selectedBotId={selectedBotId}
-          onSelectBot={handleSelectBot}
-          isLoading={isLoadingBots}
-        />
+        {/* Mobile close button inside sidebar */}
+        <div className="flex items-center justify-between px-4 py-3 border-b lg:hidden">
+          <span className="text-base font-bold text-primary">HerSpace</span>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsSidebarOpen(false)}
+            className="h-8 w-8"
+            aria-label="Close menu"
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
+
+        <div className="flex-none">
+          <BotSelector
+            bots={bots || []}
+            selectedBotId={selectedBotId}
+            onSelectBot={handleSelectBot}
+            isLoading={isLoadingBots}
+          />
+        </div>
+        
+        <div className="flex-1 overflow-hidden">
+          <ChatHistorySidebar
+            sessions={sessions}
+            currentSessionId={currentSessionId}
+            onSelectSession={handleSelectSession}
+            onNewSession={handleClearChat}
+            onDeleteSession={handleDeleteSession}
+          />
+        </div>
       </div>
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header */}
         <header className="flex items-center justify-between px-2 sm:px-4 lg:px-8 py-2 sm:py-3 border-b border-border bg-card gap-2">
+          {/* Left: Hamburger (mobile only) */}
           <div className="flex items-center gap-2 lg:hidden">
-            {/* Mobile Menu Toggle */}
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="text-foreground h-8 w-8 sm:h-10 sm:w-10"
+              className="text-foreground h-9 w-9"
+              aria-label={isSidebarOpen ? "Close menu" : "Open menu"}
             >
-              {isSidebarOpen ? <X className="w-4 h-4 sm:w-5 sm:h-5" /> : <Menu className="w-4 h-4 sm:w-5 sm:h-5" />}
+              {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </Button>
+            <span className="text-base font-bold text-primary">HerSpace</span>
           </div>
 
-          {/* Search Bar */}
+          {/* Center: Search Bar */}
           <div className="hidden md:flex flex-1 max-w-md mx-auto">
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -359,41 +483,37 @@ export function Dashboard({ onBotChange, selectedBotId: propSelectedBotId }: Das
             </div>
           </div>
 
-          {/* Backend connection status */}
-          <div className="hidden lg:flex items-center gap-2 pr-4">
-            <span
-              className={cn(
-                "h-2.5 w-2.5 rounded-full",
-                isLoadingBots
-                  ? "bg-amber-400 animate-pulse"
-                  : isBackendConnected
-                    ? "bg-emerald-500"
-                    : "bg-amber-500 animate-pulse"
-              )}
-              aria-hidden
-            />
-            <span className="text-xs font-medium text-muted-foreground">
-              {isLoadingBots
-                ? "Checking AI..."
-                : isBackendConnected
-                  ? "AI connected"
-                  : "Offline mode"}
-            </span>
-          </div>
-
-          {/* User Profile with Settings */}
+          {/* Right: Status + Notifications + User */}
           <div className="flex items-center gap-1 sm:gap-2">
+            {/* Backend connection status */}
+            <div className="hidden sm:flex items-center gap-1.5 pr-2">
+              <span
+                className={cn(
+                  "h-2 w-2 rounded-full",
+                  isLoadingBots
+                    ? "bg-amber-400 animate-pulse"
+                    : isBackendConnected
+                      ? "bg-emerald-500"
+                      : "bg-amber-500 animate-pulse"
+                )}
+                aria-hidden
+              />
+              <span className="text-xs font-medium text-muted-foreground hidden lg:inline">
+                {isLoadingBots ? "Checking AI..." : isBackendConnected ? "AI connected" : "Offline mode"}
+              </span>
+            </div>
+
             {/* Notifications */}
-            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground h-8 w-8 sm:h-10 sm:w-10">
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground h-8 w-8 sm:h-9 sm:w-9">
               <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
-            
+
             {/* User Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-1 sm:gap-2 md:gap-3 hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary/30 rounded-full pr-1 sm:pr-2">
-                  <Avatar className="w-8 h-8 sm:w-10 sm:h-10">
-                    <AvatarFallback className="bg-[oklch(0.85_0.08_175)] text-[oklch(0.35_0.05_175)]">
+                <button className="flex items-center gap-1.5 sm:gap-2 hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary/30 rounded-full pl-1 pr-1 sm:pr-2 py-1">
+                  <Avatar className="w-8 h-8 sm:w-9 sm:h-9">
+                    <AvatarFallback className="bg-[oklch(0.85_0.08_175)] text-[oklch(0.35_0.05_175)] text-sm font-semibold">
                       {userInitials}
                     </AvatarFallback>
                   </Avatar>
@@ -402,10 +522,10 @@ export function Dashboard({ onBotChange, selectedBotId: propSelectedBotId }: Das
                   </span>
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="end" className="w-60">
                 <DropdownMenuLabel>
-                  <div className="flex flex-col">
-                    <span className="font-medium">{userName}</span>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-semibold text-sm">{userName}</span>
                     <span className="text-xs text-muted-foreground font-normal">{userEmail}</span>
                   </div>
                 </DropdownMenuLabel>
@@ -414,7 +534,7 @@ export function Dashboard({ onBotChange, selectedBotId: propSelectedBotId }: Das
                   <BarChart3 className="mr-2 h-4 w-4" />
                   <span>Analytics</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/dashboard")}>
                   <User className="mr-2 h-4 w-4" />
                   <span>Profile Settings</span>
                 </DropdownMenuItem>

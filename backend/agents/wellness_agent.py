@@ -11,6 +11,13 @@ import re
 from agents.base_agent import BaseAgent
 
 
+WELLNESS_SEARCH_KEYWORDS = [
+    "workout", "exercise", "yoga", "diet", "nutrition", "sleep", "meditation",
+    "breathing", "stress relief", "fitness", "weight", "period", "pcos", "thyroid",
+    "remedy", "tips", "how to", "routine"
+]
+
+
 class WellnessAgent(BaseAgent):
     """
     FitHer - Wellness & Fitness Coach
@@ -55,6 +62,75 @@ class WellnessAgent(BaseAgent):
         if any(keyword in user_message.lower() for keyword in positive_keywords):
             self.positive_activities.append(datetime.now())
     
+    def _build_search_context(self, user_message: str) -> str:
+        """Search for relevant wellness/health info to enrich the response."""
+        msg_lower = user_message.lower()
+        if not any(k in msg_lower for k in WELLNESS_SEARCH_KEYWORDS):
+            return ""
+        try:
+            from search_utils import search_web, extract_topic
+            topic = extract_topic(user_message)
+            results = search_web(
+                f"{topic} health tips India women",
+                max_results=2,
+                timelimit="y"
+            )
+            if not results:
+                return ""
+            parts = ["=== LIVE WELLNESS SEARCH RESULTS ==="]
+            for r in results:
+                parts.append(f"- {r['title']}: {r['url']}\n  {r['snippet']}")
+            return "\n".join(parts)
+        except Exception as e:
+            print(f"[wellness search] {e}")
+            return ""
+
+    def generate_response(
+        self,
+        user_message: str,
+        user_id: Optional[str] = None,
+        conversation_history: Optional[List] = None
+    ) -> str:
+        """Override to inject live wellness search results."""
+        conversation_history = conversation_history or []
+        context = self.build_context(user_message, conversation_history, user_id=user_id)
+        search_context = self._build_search_context(user_message)
+
+        messages = [{"role": "system", "content": self.system_instruction}]
+        if context:
+            messages.append({"role": "system", "content": f"Context from memory:\n{context}"})
+        if search_context:
+            messages.append({
+                "role": "system",
+                "content": (
+                    f"{search_context}\n\n"
+                    "Use these real-time results to give specific, current advice."
+                )
+            })
+        for msg in conversation_history[-5:]:
+            messages.append(msg)
+        messages.append({"role": "user", "content": user_message})
+
+        response_text = None
+        for model in self.model_priority:
+            try:
+                response = self.groq_client.chat.completions.create(
+                    model=model, messages=messages, temperature=0.7, max_tokens=500
+                )
+                response_text = response.choices[0].message.content
+                break
+            except Exception as e:
+                print(f"Model {model} failed: {e}")
+
+        if not response_text:
+            response_text = "I'm having trouble responding right now. Please try again."
+
+        self.store_memory(user_message, response_text, user_id)
+        self.last_interaction = datetime.now()
+        self.interaction_count += 1
+        self._save_state()
+        return response_text
+
     def calculate_metrics(self, user_id: Optional[str] = None) -> Dict:
         """Calculate wellness score and trends."""
         # Count recent stress mentions (last 7 days)

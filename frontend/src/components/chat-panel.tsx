@@ -9,6 +9,7 @@ import { analyticsTracker } from "@/lib/analytics-tracker"
 import { VoiceOutput } from "@/lib/voice-agent"
 import { InteractiveVoiceGuide } from "@/components/interactive-voice-guide"
 import { SpeakingAvatar, SpeakingIndicator } from "@/components/speaking-avatar"
+import { FormattedMessage } from "@/components/formatted-message"
 
 interface ChatPanelProps {
   bot: Bot | null
@@ -83,43 +84,11 @@ export function ChatPanel({
     }
   }, [messages, bot?.bot_id])
 
-  // Auto-speak only NEW bot messages (not existing ones)
-  useEffect(() => {
-    if (messages.length === 0 || !hasInitializedRef.current) return
-
-    // Only speak if there are NEW messages beyond the initial count
-    if (messages.length <= initialMessageCountRef.current) return
-
-    const lastMessage = messages[messages.length - 1]
-    
-    // Only speak if it's a new bot message we haven't spoken yet
-    if (
-      lastMessage.role === "assistant" &&
-      voiceOutputRef.current &&
-      !isLoading &&
-      !showGuide &&
-      bot?.bot_id
-    ) {
-      // Create a unique key for this message in this bot context
-      const messageKey = `${bot.bot_id}-${lastMessage.content}`
-      
-      if (messageKey !== lastSpokenMessageRef.current) {
-        lastSpokenMessageRef.current = messageKey
-        
-        // ALWAYS cancel any ongoing speech before starting new
-        voiceOutputRef.current.stop()
-        
-        // Small delay to let cancel complete, then speak
-        setTimeout(() => {
-          if (voiceOutputRef.current) {
-            voiceOutputRef.current.speak(lastMessage.content, 1.1).catch((error) => {
-              console.error("Error auto-speaking message:", error)
-            })
-          }
-        }, 100)
-      }
-    }
-  }, [messages, isLoading, showGuide, bot?.bot_id])
+  // NOTE: Auto-speak is DISABLED here.
+  // Voice is handled exclusively by VoiceAvatar to prevent collisions.
+  // The chat panel only displays messages visually.
+  // (Previously this effect created a second speech source that
+  //  collided with VoiceAvatar, read raw markdown, and never stopped.)
 
   // Stop speech and reset when switching bots
   useEffect(() => {
@@ -304,17 +273,15 @@ export function ChatPanel({
             <div key={`${message.role}-${index}`}>
               {message.role === "user" ? (
                 <div className="flex justify-end">
-                  <div className="max-w-[80%] md:max-w-[70%] bg-primary text-primary-foreground rounded-2xl rounded-tr-sm px-3 py-2 md:px-5 md:py-3">
-                    <p className="text-xs md:text-sm whitespace-pre-wrap">{message.content}</p>
+                  <div className="max-w-[85%] md:max-w-[75%] bg-primary text-primary-foreground rounded-2xl rounded-tr-sm px-3 md:px-5 py-2 md:py-3 shadow-md break-words">
+                    <p className="text-[13px] md:text-sm whitespace-pre-wrap break-words">{message.content}</p>
                   </div>
                 </div>
               ) : (
-                <div className="flex gap-3 items-start">
-                  <div className="max-w-[90%] md:max-w-md">
-                    <div className="bg-card rounded-xl md:rounded-2xl px-3 py-2 md:px-5 md:py-4 shadow-sm border border-border">
-                      <p className="text-xs md:text-sm text-card-foreground whitespace-pre-wrap leading-relaxed">
-                        {message.content}
-                      </p>
+                <div className="flex gap-2 md:gap-3 items-start w-full">
+                  <div className="max-w-[95%] md:max-w-md w-full">
+                    <div className="bg-card rounded-xl md:rounded-2xl px-3 py-2 md:px-5 md:py-4 shadow-sm border border-border overflow-hidden break-words">
+                      <FormattedMessage content={message.content} />
                     </div>
                     
                     {/* Interactive Session Button */}

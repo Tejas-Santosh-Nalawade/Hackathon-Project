@@ -5,6 +5,8 @@ Core agent class that all specialized agents inherit from.
 Handles memory, LLM interaction, and response generation.
 """
 
+import os
+import pickle
 from typing import List, Dict, Optional, Tuple
 from datetime import datetime
 from openai import OpenAI
@@ -58,6 +60,40 @@ class BaseAgent:
         # Interaction statistics
         self.last_interaction: Optional[datetime] = None
         self.interaction_count = 0
+        
+        # Persistent state storage path
+        self._storage_dir = "storage"
+        self._state_path = os.path.join(self._storage_dir, f"{name}_state.pkl")
+        os.makedirs(self._storage_dir, exist_ok=True)
+        self._load_state()
+
+    def _load_state(self) -> None:
+        """Load persisted agent state (keyword tracking lists, counters)."""
+        if os.path.exists(self._state_path):
+            try:
+                with open(self._state_path, "rb") as f:
+                    state = pickle.load(f)
+                for key, value in state.items():
+                    if hasattr(self, key):
+                        setattr(self, key, value)
+            except Exception as e:
+                print(f"[{self.name}] Could not load state: {e}")
+
+    def _save_state(self) -> None:
+        """Persist agent state so scores survive restarts."""
+        # Collect all list/counter attributes defined by subclasses
+        state = {
+            "interaction_count": self.interaction_count,
+            "last_interaction": self.last_interaction,
+        }
+        for key, value in self.__dict__.items():
+            if isinstance(value, list) and not key.startswith("_") and key not in ("model_priority",):
+                state[key] = value
+        try:
+            with open(self._state_path, "wb") as f:
+                pickle.dump(state, f)
+        except Exception as e:
+            print(f"[{self.name}] Could not save state: {e}")
     
     def recall_memories(
         self,
@@ -123,6 +159,9 @@ class BaseAgent:
             embedding=embedding,
             metadata=metadata
         )
+        
+        # Persist state after every memory update
+        self._save_state()
     
     def build_context(
         self,
@@ -230,6 +269,7 @@ class BaseAgent:
         # Update interaction stats
         self.last_interaction = datetime.now()
         self.interaction_count += 1
+        self._save_state()
         
         return response_text
     

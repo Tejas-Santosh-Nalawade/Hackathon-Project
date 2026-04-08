@@ -16,6 +16,12 @@ export default function Home() {
       return
     }
     
+    // If no specific bot was requested, redirect to dashboard
+    if (!location.state?.botId) {
+      navigate("/dashboard", { replace: true })
+      return
+    }
+
     // Set bot from navigation state if provided
     if (location.state?.botId) {
       setSelectedBotId(location.state.botId)

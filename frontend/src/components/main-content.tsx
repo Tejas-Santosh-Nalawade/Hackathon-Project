@@ -10,6 +10,7 @@ import { VoiceAvatar } from "./voice-avatar"
 import { AgenticDashboard } from "./agentic-dashboard"
 import { PersonalizedDashboard } from "./personalized-dashboard"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { cancelAllVoice } from "@/lib/voice-agent"
 
 interface MainContentProps {
   bot: Bot | null
@@ -204,7 +205,7 @@ export function MainContent({
   isLoading,
   userName,
 }: MainContentProps) {
-  const [activeTab, setActiveTab] = useState<"chat" | "dashboard" | "features">("chat")
+  const [activeTab, setActiveTab] = useState<"chat" | "dashboard" | "features">("features")
   
   // Get last assistant message for avatar
   const lastAssistantMessage = messages
@@ -233,19 +234,24 @@ export function MainContent({
   return (
     <main className="flex-1 flex flex-col h-full overflow-hidden">
       {/* Tab Switcher */}
-      <div className="shrink-0 border-b px-4 py-2">
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "chat" | "dashboard" | "features")}>
-          <TabsList className="grid w-full max-w-2xl grid-cols-3">
-            <TabsTrigger value="chat" className="flex items-center gap-2">
-              <MessageSquare className="w-4 h-4" />
+      <div className="shrink-0 border-b px-3 sm:px-4 py-2">
+        <Tabs value={activeTab} onValueChange={(v) => {
+          if (activeTab === "chat" && v !== "chat") {
+            cancelAllVoice()
+          }
+          setActiveTab(v as "chat" | "dashboard" | "features")
+        }}>
+          <TabsList className="grid w-full max-w-sm sm:max-w-2xl grid-cols-3">
+            <TabsTrigger value="chat" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+              <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               Chat
             </TabsTrigger>
-            <TabsTrigger value="dashboard" className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4" />
+            <TabsTrigger value="dashboard" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+              <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               Analytics
             </TabsTrigger>
-            <TabsTrigger value="features" className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4" />
+            <TabsTrigger value="features" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               Dashboard
             </TabsTrigger>
           </TabsList>

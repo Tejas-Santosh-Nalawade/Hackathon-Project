@@ -1,5 +1,14 @@
 import type { Bot, ChatMessage, ChatResponse } from "./types"
 
+
+export interface ChatSession {
+  id: string
+  botId: string
+  title: string
+  updatedAt: string
+  messages: ChatMessage[]
+}
+
 // Use import.meta.env for Vite or fallback to "http://localhost:8000"
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000"
 
@@ -400,7 +409,7 @@ export async function fetchAllAgents(): Promise<Record<string, AgentSummary>> {
 }
 
 // ============================================================================
-// localStorage helpers for chat history
+// localStorage helpers for chat history (Legacy Single Session)
 // ============================================================================
 
 export function saveChatHistory(botId: string, history: ChatMessage[]): void {
@@ -420,5 +429,58 @@ export function loadChatHistory(botId: string): ChatMessage[] {
 export function clearChatHistory(botId: string): void {
   if (typeof window !== "undefined") {
     localStorage.removeItem(`chat_history_${botId}`)
+  }
+}
+
+// ============================================================================
+// Multi-Session Chat History Management
+// ============================================================================
+
+export function getChatSessions(botId: string): ChatSession[] {
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem(`chat_sessions_${botId}`)
+    if (stored) {
+      try {
+        const sessions: ChatSession[] = JSON.parse(stored)
+        // Sort newest first
+        return sessions.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+      } catch (e) {
+        console.error("Failed to parse chat sessions", e)
+      }
+    }
+  }
+  return []
+}
+
+export function saveChatSession(session: ChatSession): void {
+  if (typeof window !== "undefined") {
+    const sessions = getChatSessions(session.botId)
+    const existingIdx = sessions.findIndex(s => s.id === session.id)
+    
+    if (existingIdx >= 0) {
+      sessions[existingIdx] = session
+    } else {
+      sessions.push(session)
+    }
+    
+    localStorage.setItem(`chat_sessions_${session.botId}`, JSON.stringify(sessions))
+  }
+}
+
+export function deleteChatSession(botId: string, sessionId: string): void {
+  if (typeof window !== "undefined") {
+    const sessions = getChatSessions(botId)
+    const filtered = sessions.filter(s => s.id !== sessionId)
+    localStorage.setItem(`chat_sessions_${botId}`, JSON.stringify(filtered))
+  }
+}
+
+export function createNewSession(botId: string, title: string = "New Chat"): ChatSession {
+  return {
+    id: window.crypto && window.crypto.randomUUID ? window.crypto.randomUUID() : Math.random().toString(36).substring(2, 9),
+    botId,
+    title,
+    updatedAt: new Date().toISOString(),
+    messages: []
   }
 }

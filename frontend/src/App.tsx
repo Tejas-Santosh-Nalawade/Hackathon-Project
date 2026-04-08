@@ -19,7 +19,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/analytics" element={<Analytics />} />
-            <Route path="/dashboard" element={<PersonalizedDashboard />} />
+            <Route path="/dashboard" element={<PersonalizedDashboard standalone={true} />} />
           </Routes>
           <Toaster />
         </BrowserRouter>

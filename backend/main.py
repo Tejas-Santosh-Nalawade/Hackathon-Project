@@ -16,6 +16,8 @@ from typing import Optional
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, Field
 from pydantic import BaseModel, Field
 from openai import OpenAI
 
@@ -42,6 +44,8 @@ from auth import (
     get_current_user,
     user_db,
 )
+
+from elevenlabs_service import elevenlabs_tts_stream
 
 
 # =============================================================================
@@ -840,6 +844,24 @@ async def chat_with_agent_protected(
             status_code=500,
             detail={"error": f"Agent error: {str(e)}", "code": "AGENT_ERROR"}
         )
+
+# =============================================================================
+# Voice & ElevenLabs Overrides
+# =============================================================================
+
+class VoiceTTSRequest(BaseModel):
+    text: str
+
+@app.post("/api/v2/voice-tts")
+async def handle_voice_tts(request: VoiceTTSRequest):
+    """
+    Wispr Flow outputs clean text directly to the UI which connects here.
+    Stream high-quality TTS back to the avatar using ElevenLabs.
+    """
+    return StreamingResponse(
+        elevenlabs_tts_stream(request.text),
+        media_type="audio/mpeg"
+    )
 
 # =============================================================================
 # Run (for development)
