@@ -9,13 +9,13 @@ export default function AuthPage() {
         <div>
           {/* Logo */}
           <div className="flex items-center gap-3 sm:gap-4 mb-10 sm:mb-16 lg:mb-24">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-2xl sm:rounded-3xl overflow-hidden bg-white shadow-xl p-1.5 sm:p-2 ring-2 sm:ring-4 ring-white/40">
+            <div className="w-18 h-18  sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-2xl sm:rounded-3xl overflow-hidden bg-white shadow-xl p-1.5 sm:p-2 ring-2 sm:ring-4 ring-white/40">
               <img
                 src="/logo.jpg"
                 alt="HerSpace Logo"
                 width={96}
                 height={96}
-                className="object-cover rounded-xl sm:rounded-2xl"
+                className="object-cover rounded-xl sm:rounded-xl"
               />
             </div>
             <span className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight drop-shadow-2xl">HerSpace</span>

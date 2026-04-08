@@ -417,7 +417,7 @@ export function Dashboard({ onBotChange, selectedBotId: propSelectedBotId, initi
       <div
         className={cn(
           "fixed inset-y-0 left-0 z-50 lg:relative lg:z-0 flex flex-col h-full bg-background border-r",
-          "transition-transform duration-300 ease-in-out w-72",
+          "transition-transform duration-300 ease-in-out w-72 max-w-[86vw]",
           isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
@@ -456,7 +456,7 @@ export function Dashboard({ onBotChange, selectedBotId: propSelectedBotId, initi
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
         {/* Top Header */}
         <header className="flex items-center justify-between px-2 sm:px-4 lg:px-8 py-2 sm:py-3 border-b border-border bg-card gap-2">
           {/* Left: Hamburger (mobile only) */}

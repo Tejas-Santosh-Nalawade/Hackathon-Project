@@ -58,24 +58,28 @@ export function BotSelector({
   const skeletonItems = Array.from({ length: 5 })
 
   return (
-    <aside className="w-80 bg-sidebar border-r border-sidebar-border flex flex-col h-full flex-shrink-0">
-      {/* Logo - Larger and More Prominent */}
-      <div className="p-6 pb-6 border-b border-sidebar-border bg-white flex-shrink-0">
+    <aside className="w-full bg-sidebar border-r border-sidebar-border flex flex-col h-full shrink-0 min-w-0">
+      {/* Logo */}
+      <div className="p-5 border-b border-sidebar-border bg-white shrink-0">
         <div className="flex items-center gap-4">
-          <div className="w-20 h-20 rounded-3xl overflow-hidden bg-gradient-to-br from-[oklch(0.85_0.08_175)] to-[oklch(0.75_0.10_175)] p-1 shadow-xl ring-2 ring-primary/30">
-            <div className="w-full h-full bg-white rounded-2xl p-1.5">
+          <div className="h-22 w-22 rounded-3xl border-2 border-[oklch(0.79_0.07_175)] bg-white p-1.5 shadow-[0_8px_24px_rgba(35,173,156,0.18)]">
+            <div className="h-full w-full rounded-[18px] border border-[oklch(0.86_0.03_180)] bg-white p-1.5 flex items-center justify-center overflow-hidden">
               <img
                 src="/logo.jpg"
                 alt="HerSpace Logo"
                 width={80}
                 height={80}
-                className="object-cover rounded-xl w-full h-full"
+                className="w-full h-full object-contain"
               />
             </div>
           </div>
-          <div>
-            <span className="text-3xl font-bold text-primary tracking-tight block">HerSpace</span>
-            <span className="text-sm text-muted-foreground font-semibold">Support Platform</span>
+          <div className="min-w-0">
+            <span className="text-4xl font-bold tracking-tight block leading-none text-[oklch(0.50_0.14_337)]">
+              HerSpace
+            </span>
+            <span className="text-[1.05rem] leading-tight text-muted-foreground font-semibold block mt-1">
+              Support Platform
+            </span>
           </div>
         </div>
       </div>

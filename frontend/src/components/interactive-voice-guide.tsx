@@ -134,23 +134,17 @@ export function InteractiveVoiceGuide({
     await speak(step.instruction)
     await new Promise(resolve => setTimeout(resolve, 200))
 
-    if (step.countdown) {
-      // Do countdown
-      for (let i = step.duration; i > 0; i--) {
-        setCountdown(i)
-        if (i <= 4) {
-          // Speak countdown faster
-          await speak(i.toString(), true)
-        }
-        await new Promise(resolve => setTimeout(resolve, 1000))
+    // Always show a true second-by-second visual countdown (e.g. 3, 2, 1).
+    for (let i = step.duration; i > 0; i--) {
+      if (!shouldContinueRef.current) {
+        setCountdown(0)
+        return
       }
-      setCountdown(0)
-    } else {
-      // Just wait
-      setCountdown(step.duration)
-      await new Promise(resolve => setTimeout(resolve, step.duration * 1000))
-      setCountdown(0)
+
+      setCountdown(i)
+      await new Promise(resolve => setTimeout(resolve, 1000))
     }
+    setCountdown(0)
 
     // Move to next step
     await runStep(stepIndex + 1, cycle)
