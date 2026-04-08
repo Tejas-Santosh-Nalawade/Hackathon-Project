@@ -60,24 +60,24 @@ export function BotSelector({
   return (
     <aside className="w-full bg-sidebar border-r border-sidebar-border flex flex-col h-full shrink-0 min-w-0">
       {/* Logo */}
-      <div className="p-5 border-b border-sidebar-border bg-white shrink-0">
-        <div className="flex items-center gap-4">
-          <div className="h-22 w-22 rounded-3xl border-2 border-[oklch(0.79_0.07_175)] bg-white p-1.5 shadow-[0_8px_24px_rgba(35,173,156,0.18)]">
+      <div className="px-4 sm:px-5 py-3.5 sm:py-4 border-b border-sidebar-border bg-white shrink-0">
+        <div className="mx-auto flex w-full max-w-62 items-center justify-center gap-3">
+          <div className="h-18 w-18 shrink-0 sm:h-20 sm:w-20 rounded-3xl border-2 border-[oklch(0.79_0.07_175)] bg-white p-1.5 shadow-[0_8px_20px_rgba(35,173,156,0.18)]">
             <div className="h-full w-full rounded-[18px] border border-[oklch(0.86_0.03_180)] bg-white p-1.5 flex items-center justify-center overflow-hidden">
               <img
                 src="/logo.jpg"
                 alt="HerSpace Logo"
                 width={80}
                 height={80}
-                className="w-full h-full object-contain"
+                className="block w-full h-full object-contain"
               />
             </div>
           </div>
-          <div className="min-w-0">
-            <span className="text-4xl font-bold tracking-tight block leading-none text-[oklch(0.50_0.14_337)]">
+          <div className="min-w-0 flex-1">
+            <span className="text-[2.05rem] sm:text-[2.2rem] font-bold tracking-tight block leading-none text-[oklch(0.50_0.14_337)] whitespace-nowrap">
               HerSpace
             </span>
-            <span className="text-[1.05rem] leading-tight text-muted-foreground font-semibold block mt-1">
+            <span className="text-[1.02rem] sm:text-[1.08rem] leading-tight text-muted-foreground font-semibold block mt-1 whitespace-nowrap">
               Support Platform
             </span>
           </div>

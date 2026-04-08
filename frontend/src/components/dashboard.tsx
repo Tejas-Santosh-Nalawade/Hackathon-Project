@@ -421,14 +421,13 @@ export function Dashboard({ onBotChange, selectedBotId: propSelectedBotId, initi
           isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
-        {/* Mobile close button inside sidebar */}
-        <div className="flex items-center justify-between px-4 py-3 border-b lg:hidden">
-          <span className="text-base font-bold text-primary">HerSpace</span>
+        {/* Mobile close button overlay */}
+        <div className="absolute top-2 right-2 z-10 lg:hidden">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setIsSidebarOpen(false)}
-            className="h-8 w-8"
+            className="h-9 w-9 bg-white/90 backdrop-blur-sm border border-border"
             aria-label="Close menu"
           >
             <X className="w-5 h-5" />
