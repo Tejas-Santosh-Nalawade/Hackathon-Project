@@ -237,11 +237,17 @@ export function VoiceAvatar({ bot, onSendMessage }: VoiceAvatarProps) {
     prevBotIdRef.current = currentBotId
   }, [bot?.bot_id])
 
-  // Welcome message when bot changes — only if voice enabled
+  // Welcome message when bot changes — only ONCE per bot per session
   useEffect(() => {
     if (!bot?.bot_id || !voiceEnabled) return
 
-    // Small delay to ensure any previous speech was cancelled
+    // Check if we've already greeted this bot in this browser session
+    const greetedKey = `voice_greeted_${bot.bot_id}`
+    if (sessionStorage.getItem(greetedKey)) return
+
+    // Mark as greeted immediately so re-renders don't trigger again
+    sessionStorage.setItem(greetedKey, "1")
+
     const timer = setTimeout(() => {
       let welcomeMsg = ""
       
@@ -269,14 +275,11 @@ export function VoiceAvatar({ bot, onSendMessage }: VoiceAvatarProps) {
       setIsSpeaking(true)
       
       voiceAgentRef.current.speak(welcomeMsg, () => {
-        // Speech finished naturally
         setIsSpeaking(false)
       })
-    }, 200) // 200ms delay to let cancellation happen first
+    }, 200)
 
-    return () => {
-      clearTimeout(timer)
-    }
+    return () => clearTimeout(timer)
   }, [bot?.bot_id, voiceEnabled])
 
   // Cleanup on unmount — cancel everything

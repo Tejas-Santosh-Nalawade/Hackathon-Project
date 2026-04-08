@@ -150,9 +150,11 @@ const HISTORY_SLICE = 12
 interface DashboardProps {
   onBotChange?: (botId: string) => void
   selectedBotId?: string
+  initialPrompt?: string
+  onInitialPromptConsumed?: () => void
 }
 
-export function Dashboard({ onBotChange, selectedBotId: propSelectedBotId }: DashboardProps = {}) {
+export function Dashboard({ onBotChange, selectedBotId: propSelectedBotId, initialPrompt, onInitialPromptConsumed }: DashboardProps = {}) {
   const navigate = useNavigate()
   const [selectedBotId, setSelectedBotId] = useState<string>(propSelectedBotId || "wellness") // Use prop or default to wellness
   
@@ -561,6 +563,8 @@ export function Dashboard({ onBotChange, selectedBotId: propSelectedBotId }: Das
           onClearChat={handleClearChat}
           isLoading={isLoading}
           userName={userName}
+          initialPrompt={initialPrompt}
+          onInitialPromptConsumed={onInitialPromptConsumed}
         />
       </div>
     </div>

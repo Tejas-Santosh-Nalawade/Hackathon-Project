@@ -462,7 +462,7 @@ export function PersonalizedDashboard({ botId = "wellness", onBotChange, standal
           <p className="text-xs text-purple-500 italic">{activeAgent.badge} · Powered by {activeAgent.name}</p>
         </div>
         <Button
-          onClick={() => navigate("/", { state: { botId: activeBot } })}
+          onClick={() => navigate("/", { state: { botId: activeBot, initialPrompt: `Hi ${activeAgent.name}, I'd like your help with ${activeAgent.desc.toLowerCase()}.` } })}
           className={`text-white shadow-lg w-full md:w-auto whitespace-nowrap ${
             activeBot === "wellness" ? "bg-amber-500 hover:bg-amber-600" :
             activeBot === "planner"  ? "bg-blue-500 hover:bg-blue-600" :
@@ -511,7 +511,7 @@ export function PersonalizedDashboard({ botId = "wellness", onBotChange, standal
         dashboard={dashboard}
         loadingDash={loadingDash}
         onChat={handleBotClick}
-        onNavigateToChat={(id) => navigate("/", { state: { botId: id } })}
+        onNavigateToChat={(id, prompt) => navigate("/", { state: { botId: id, initialPrompt: prompt } })}
         enrolledCourses={enrolledCourses}
         onEnroll={handleEnrollCourse}
         markedTasks={markedTasks}

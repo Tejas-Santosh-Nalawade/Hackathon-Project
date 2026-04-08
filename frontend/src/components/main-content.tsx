@@ -20,6 +20,8 @@ interface MainContentProps {
   onClearChat: () => void
   isLoading?: boolean
   userName: string
+  initialPrompt?: string
+  onInitialPromptConsumed?: () => void
 }
 
 // Agent-specific cards configuration
@@ -204,8 +206,23 @@ export function MainContent({
   onClearChat,
   isLoading,
   userName,
+  initialPrompt,
+  onInitialPromptConsumed,
 }: MainContentProps) {
   const [activeTab, setActiveTab] = useState<"chat" | "dashboard" | "features">("features")
+  
+  // When an initialPrompt arrives: switch to chat tab and send it once
+  useEffect(() => {
+    if (initialPrompt && bot) {
+      setActiveTab("chat")
+      // Small delay so the chat tab renders before sending
+      const t = setTimeout(() => {
+        onSendMessage(initialPrompt)
+        onInitialPromptConsumed?.()
+      }, 150)
+      return () => clearTimeout(t)
+    }
+  }, [initialPrompt, bot])
   
   // Get last assistant message for avatar
   const lastAssistantMessage = messages

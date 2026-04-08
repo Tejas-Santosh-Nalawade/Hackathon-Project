@@ -15,7 +15,7 @@ interface AgentTabsProps {
   dashboard: DashboardData | null
   loadingDash: boolean
   onChat: (botId: string) => void       // switches view
-  onNavigateToChat: (botId: string) => void  // opens chat
+  onNavigateToChat: (botId: string, prompt?: string) => void  // opens chat with optional prompt
   enrolledCourses: number[]
   onEnroll: (id: number) => void
   markedTasks: number[]
@@ -32,7 +32,7 @@ export function AgentTabs({ botId, dashboard, loadingDash, onChat, onNavigateToC
 }
 
 // ─── WELLNESS TABS ────────────────────────────────────────────────────────────
-function WellnessTabs({ dashboard, loadingDash, onChat }: { dashboard: DashboardData | null; loadingDash: boolean; onChat: (id: string) => void }) {
+function WellnessTabs({ dashboard, loadingDash, onChat }: { dashboard: DashboardData | null; loadingDash: boolean; onChat: (id: string, prompt?: string) => void }) {
   const score = dashboard?.wellness.score ?? 70
   const status = dashboard?.wellness.status ?? "Doing okay"
   const trend = dashboard?.wellness.trend ?? "stable"
@@ -57,13 +57,13 @@ function WellnessTabs({ dashboard, loadingDash, onChat }: { dashboard: Dashboard
       <TabsContent value="exercises" className="space-y-3">
         <div className="flex items-center justify-between mb-2">
           <h3 className="font-bold text-gray-900">Desk-Safe Exercises</h3>
-          <Button size="sm" onClick={() => onChat("wellness")} className="bg-amber-500 hover:bg-amber-600 text-white">
+          <Button size="sm" onClick={() => onChat("wellness", "I need help with a desk exercise. Can you guide me?")} className="bg-amber-500 hover:bg-amber-600 text-white">
             <MessageSquare className="w-3.5 h-3.5 mr-1.5" />Start with FitHer
           </Button>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {exercises.map((ex) => (
-            <Card key={ex.type} className="p-4 border-2 border-amber-100 hover:border-amber-300 hover:shadow-md transition-all cursor-pointer group" onClick={() => onChat("wellness")}>
+            <Card key={ex.type} className="p-4 border-2 border-amber-100 hover:border-amber-300 hover:shadow-md transition-all cursor-pointer group" onClick={() => onChat("wellness", `Guide me through ${ex.title} - ${ex.desc}`)}>
               <div className="text-2xl mb-2">{ex.emoji}</div>
               <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-xs mb-2">{ex.type} · {ex.duration}</Badge>
               <h4 className="font-semibold text-sm text-gray-900 mb-1">{ex.title}</h4>
@@ -102,7 +102,7 @@ function WellnessTabs({ dashboard, loadingDash, onChat }: { dashboard: Dashboard
               <p className="font-bold text-red-600">-5 pts each</p>
             </div>
           </div>
-          <Button className="w-full mt-4 bg-amber-500 hover:bg-amber-600 text-white" onClick={() => onChat("wellness")}>
+          <Button className="w-full mt-4 bg-amber-500 hover:bg-amber-600 text-white" onClick={() => onChat("wellness", "Help me improve my wellness score. What should I focus on?")}>
             <MessageSquare className="w-4 h-4 mr-2" />Chat with FitHer to improve score
           </Button>
         </Card>
@@ -126,7 +126,7 @@ function WellnessTabs({ dashboard, loadingDash, onChat }: { dashboard: Dashboard
             </div>
           </Card>
         ))}
-        <Button className="w-full bg-amber-500 hover:bg-amber-600 text-white" onClick={() => onChat("wellness")}>
+        <Button className="w-full bg-amber-500 hover:bg-amber-600 text-white" onClick={() => onChat("wellness", "Give me personalised wellness advice based on my current state.")}>
           <MessageSquare className="w-4 h-4 mr-2" />Get personalised wellness advice
         </Button>
       </TabsContent>
@@ -251,7 +251,7 @@ function PlannerTabs({ dashboard, loadingDash, onChat, markedTasks, onMarkDone }
 }
 
 // ─── SPEAKUP TABS ─────────────────────────────────────────────────────────────
-function SpeakUpTabs({ dashboard, loadingDash, onChat }: { dashboard: DashboardData | null; loadingDash: boolean; onChat: (id: string) => void }) {
+function SpeakUpTabs({ dashboard, loadingDash, onChat }: { dashboard: DashboardData | null; loadingDash: boolean; onChat: (id: string, prompt?: string) => void }) {
   const alerts = dashboard?.safety.alerts ?? 0
   const priority = dashboard?.safety.priority ?? "low"
   const status = dashboard?.safety.status ?? "All clear"
@@ -469,7 +469,7 @@ function UpskillTabs({ dashboard, loadingDash, onChat, enrolledCourses, onEnroll
 }
 
 // ─── FINANCE TABS ─────────────────────────────────────────────────────────────
-function FinanceTabs({ dashboard, loadingDash, onChat }: { dashboard: DashboardData | null; loadingDash: boolean; onChat: (id: string) => void }) {
+function FinanceTabs({ dashboard, loadingDash, onChat }: { dashboard: DashboardData | null; loadingDash: boolean; onChat: (id: string, prompt?: string) => void }) {
   const savings = dashboard?.finance.savings_goal ?? 50
   const status = dashboard?.finance.status ?? "Let's start"
 
@@ -593,3 +593,4 @@ function FinanceTabs({ dashboard, loadingDash, onChat }: { dashboard: DashboardD
     </Tabs>
   )
 }
+
